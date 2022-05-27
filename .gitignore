@@ -1,0 +1,14 @@
+**/tmp
+
+.env
+keys
+bin
+api-football
+
+.DS_Store
+**/.DS_Store
+.vscode
+
+cmd/goal_poller/.env
+cmd/test_client/.env
+cmd/server/.env
