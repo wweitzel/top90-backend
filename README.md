@@ -11,7 +11,7 @@ https://top90.io
 ## Development Environment Setup
 1. Install Go
 2. Create a `.env` in the root directory and add the contents of `.env.sample` to it with real values
-3. Create `/keys` in the root directory and add the cert for DB tunneling
+3. Create `/keys` in the root directory and add the `defaultec2.pem` cert for DB tunneling
 
 ## Linux Commands
 
