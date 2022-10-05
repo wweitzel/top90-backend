@@ -24,23 +24,28 @@ $ brew install awscli
 ```
 $ aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
 ```
-6. Run db migrations
+6. Install golang-migrate
+```
+$ brew install golang-migrate
+```
+7. Run db migrations
 ```
 $ make migrate-up
 ```
-7. Run the poller to store some goals. This will take about 2-5 min to run.
+8. Create tmp directory at project root
+9. Run the poller to store some goals. This will take about 2-5 min to run.
 ```
 $ make run-poller
 ```
-8. Go to http://localhost:8090/?pgsql=db
-9. Login with the following credentials
+10. Go to http://localhost:8090/?pgsql=db
+11. Login with the following credentials
 ```
 username: admin
 password: admin
 database: redditsoccergoals
 ```
-10. Look at the goals table in the ui and verify it has goals
-11. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
+12. Look at the goals table in the ui and verify it has goals
+13. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
 
 ## Debugging
 For vscode, make a `.vscode/launch.json` file and paste the following in it.
