@@ -23,12 +23,7 @@ type S3Client struct {
 
 // Create new s3 client
 func NewClient(awsAccessKey, awsSecretAccessKey string) S3Client {
-	s3Config := &aws.Config{
-		Region: aws.String("us-east-1"),
-		Credentials: credentials.NewStaticCredentials(
-			awsAccessKey,
-			awsSecretAccessKey, ""),
-	}
+	s3Config := getS3Config(awsAccessKey, awsSecretAccessKey)
 
 	session, err := session.NewSession(s3Config)
 	if err != nil {
@@ -42,6 +37,30 @@ func NewClient(awsAccessKey, awsSecretAccessKey string) S3Client {
 	s3Client.s3 = s3
 
 	return s3Client
+}
+
+func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {
+	if os.Getenv("ENV") == "dev" {
+		return &aws.Config{
+			Region:           aws.String("us-east-1"),
+			Endpoint:         aws.String("http://localhost:4566"),
+			S3ForcePathStyle: aws.Bool(true),
+			Credentials: credentials.NewStaticCredentials(
+				awsAccessKey,
+				awsSecretAccessKey, ""),
+		}
+	} else if os.Getenv("ENV") == "prod" {
+		return &aws.Config{
+			Region: aws.String("us-east-1"),
+			Credentials: credentials.NewStaticCredentials(
+				awsAccessKey,
+				awsSecretAccessKey, ""),
+		}
+	} else {
+		log.Fatalln("environment variable ENV must be set")
+		os.Exit(1)
+		return nil
+	}
 }
 
 // Call s3.HeadBucket to verify top90 bucket exists and we have permission to view it

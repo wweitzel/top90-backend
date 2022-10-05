@@ -56,9 +56,9 @@ func main() {
 		BucketName:   config.AwsBucketName,
 		// TODO: Take these from command line input
 		Options: poller.Options{
-			DryRun:     true,
+			DryRun:     false,
 			RunMode:    poller.Newest,
-			SearchTerm: "madrid",
+			SearchTerm: "tottenham",
 		},
 	}
 
