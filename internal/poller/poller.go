@@ -56,14 +56,19 @@ func (poller *GoalPoller) Run() {
 
 func (poller *GoalPoller) RunNewest(options Options) {
 	// Get reddit posts that have been submitted since the last run
-	newestGoals, err := poller.Dao.GetGoals(db.Pagination{Limit: 25}, db.GetGoalsFilter{})
+	newestGoals, err := poller.Dao.GetGoals(db.Pagination{Limit: 1}, db.GetGoalsFilter{})
 	// newestGoal, err := poller.Dao.GetNewestGoal()
 	if err != nil {
 		log.Fatal(err)
 	}
-	newestGoal := newestGoals[24]
 
-	startEpoch := newestGoal.RedditPostCreatedAt.Unix()
+	startEpoch := time.Now().AddDate(0, 0, -1).Unix()
+
+	if len(newestGoals) > 0 {
+		newestGoal := newestGoals[0]
+		startEpoch = newestGoal.RedditPostCreatedAt.Unix()
+	}
+
 	posts := poller.RedditClient.GetNewPosts(startEpoch)
 	poller.ingestPosts(posts, options)
 }

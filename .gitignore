@@ -4,6 +4,7 @@
 keys
 bin
 api-football
+docker-data
 
 .DS_Store
 **/.DS_Store
