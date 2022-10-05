@@ -26,7 +26,7 @@ $ aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
 ```
 6. Install golang-migrate
 ```
-brew install golang-migrate
+$ brew install golang-migrate
 ```
 7. Run db migrations
 ```
