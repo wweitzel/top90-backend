@@ -78,7 +78,7 @@ The above configuration will give you the options to "Debug Server" and "Debug P
 Finish the internal/apifootball client in order to:
 - Add Premier League only capability
 - Add true search capability based on team on player by matching goals to a player/team stored in db
-- Show teanm schedules and rosters and click them to see the goals
+- Show team schedules and rosters and click them to see the goals
 
 ## Linux Commands
 
