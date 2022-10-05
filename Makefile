@@ -1,7 +1,7 @@
 # Set these environment variables for the tunneling
-DB_USER     = ${TOP90_DB_USER}
-DB_PASSWORD = ${TOP90_DB_PASSWORD}
-DB_NAME     = ${TOP90_DB_NAME}
+DB_USER     = admin
+DB_PASSWORD = admin
+DB_NAME     = redditsoccergoals
 
 clean:
 	rm -r bin/*
