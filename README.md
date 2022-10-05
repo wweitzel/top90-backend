@@ -42,6 +42,33 @@ database: redditsoccergoals
 10. Look at the goals table in the ui and verify it has goals
 11. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
 
+## Debugging
+For vscode, make a `.vscode/launch.json` file and paste the following in it.
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "./cmd/server",
+            "cwd": "./"
+        },
+        {
+            "name": "Debug Poller",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "./cmd/poller",
+            "cwd": "./"
+        }
+    ]
+}
+```
+The above configuration will give you the options to "Debug Server" and "Debug Poller" in the "Run and Debug" tab of vscode.
+
 ## Remaining Work
 Finish the internal/apifootball client in order to:
 - Add Premier League only capability
