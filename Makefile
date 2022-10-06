@@ -1,4 +1,3 @@
-# Set these environment variables for the tunneling
 DB_USER     = admin
 DB_PASSWORD = admin
 DB_NAME     = redditsoccergoals
@@ -36,6 +35,10 @@ save-server-image:
 deploy-server: build-server save-server-image
 	scp -i keys/defaultec2.pem top90-server-v0.tar ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
 
+# playground commands -----------------------------------------------------------------------------------------------------
+run-playground:
+	go run ./cmd/playground/...
+
 # db migration commands ---------------------------------------------------------------------------------------------------
 migrate-up:
 	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations up
@@ -53,3 +56,7 @@ tunnel-db:
 
 get-poller-logs:
 	scp -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/goal_poller_output.txt .
+
+# utility commands --------------------------------------------------------------------------------------------------------
+create-s3-bucket:
+	aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals

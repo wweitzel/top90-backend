@@ -68,11 +68,22 @@ For vscode, make a `.vscode/launch.json` file and paste the following in it.
             "mode": "auto",
             "program": "./cmd/poller",
             "cwd": "./"
+        },
+        {
+            "name": "Debug Playground",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "./cmd/playground",
+            "cwd": "./"
         }
     ]
 }
 ```
 The above configuration will give you the options to "Debug Server" and "Debug Poller" in the "Run and Debug" tab of vscode.
+
+## Resetting data
+If you want to start fresh, you can easily wipe all your data by deleting the two folders in `docker-data`.
 
 ## Remaining Work
 Finish the internal/apifootball client in order to:
