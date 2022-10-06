@@ -3,10 +3,11 @@ package apifootball
 const leaguesUrl = baseUrl + "leagues"
 
 type League struct {
-	ID   int
-	Name string
-	Type string
-	Logo string
+	Id        int
+	Name      string
+	Type      string
+	Logo      string
+	CreatedAt string
 }
 
 func (client *Client) GetLeague(country, leagueName string) (League, error) {
@@ -35,7 +36,7 @@ func toLeagues(response GetLeaguesResponse) []League {
 
 	for _, l := range response.Data {
 		league := League{}
-		league.ID = l.League.ID
+		league.Id = l.League.ID
 		league.Logo = l.League.Logo
 		league.Name = l.League.Name
 		league.Type = l.League.Type

@@ -31,9 +31,9 @@ func main() {
 	}
 
 	// Get fixtures for that league and season
-	fixtures, err := client.GetFixtures(league.ID, season)
+	fixtures, err := client.GetFixtures(league.Id, season)
 	if err != nil {
-		log.Fatalf("Could not get fixtures for leagueId %d, season %d \n%v", league.ID, season, err)
+		log.Fatalf("Could not get fixtures for leagueId %d, season %d \n%v", league.Id, season, err)
 	}
 
 	// TODO: Store these fixtures in our own database

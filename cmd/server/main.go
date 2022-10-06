@@ -39,6 +39,7 @@ func main() {
 	http.HandleFunc("/", GetApiInfoHandler)
 	http.HandleFunc("/goals", GetGoalsHandler)
 	http.HandleFunc("/goals_crawl", GetGoalsCrawlHandler)
+	http.HandleFunc("/leagues", GetLeaguesHandler)
 
 	// Start the server
 	port := ":7171"
