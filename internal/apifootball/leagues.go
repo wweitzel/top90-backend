@@ -2,17 +2,45 @@ package apifootball
 
 const leaguesUrl = baseUrl + "leagues"
 
-func GetLeagues(client *Client) (*GetLeaguesResponse, error) {
+type League struct {
+	ID   int
+	Name string
+	Type string
+	Logo string
+}
+
+func (client *Client) GetLeague(country, leagueName string) (League, error) {
 	req, err := client.newRequest("GET", leaguesUrl)
 	if err != nil {
-		return nil, err
+		return League{}, err
 	}
+
+	queryParams := req.URL.Query()
+	queryParams.Set("country", country)
+	queryParams.Set("name", leagueName)
+
+	req.URL.RawQuery = queryParams.Encode()
 
 	getLeaguesResponse := &GetLeaguesResponse{}
 	_, err = client.do(req, getLeaguesResponse)
 	if err != nil {
-		return nil, err
+		return League{}, err
 	}
 
-	return getLeaguesResponse, nil
+	return toLeagues(*getLeaguesResponse)[0], nil
+}
+
+func toLeagues(response GetLeaguesResponse) []League {
+	var leagues []League
+
+	for _, l := range response.Data {
+		league := League{}
+		league.ID = l.League.ID
+		league.Logo = l.League.Logo
+		league.Name = l.League.Name
+		league.Type = l.League.Type
+		leagues = append(leagues, league)
+	}
+
+	return leagues
 }

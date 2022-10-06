@@ -1,11 +1,14 @@
 package apifootball
 
 type GetLeaguesResponse struct {
-	Get        string        `json:"get"`
-	Parameters []interface{} `json:"parameters"`
-	Errors     []interface{} `json:"errors"`
-	Results    int           `json:"results"`
-	Paging     struct {
+	Get        string `json:"get"`
+	Parameters struct {
+		Country string `json:"country"`
+		Season  string `json:"season"`
+	} `json:"parameters"`
+	Errors  []interface{} `json:"errors"`
+	Results int           `json:"results"`
+	Paging  struct {
 		Current int `json:"current"`
 		Total   int `json:"total"`
 	} `json:"paging"`
