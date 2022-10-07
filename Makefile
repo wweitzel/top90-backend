@@ -39,12 +39,19 @@ deploy-server: build-server save-server-image
 run-playground:
 	go run ./cmd/playground/...
 
+# leagues ingest commands --------------------------------------------------------------------------------------------------
+run-leagues-ingest:
+	go run ./cmd/leagues_ingest/...
+
 # db migration commands ---------------------------------------------------------------------------------------------------
 migrate-up:
 	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations up
 
 migrate-down:
 	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations down
+
+migrate-rollback:
+	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations down 1
 
 # tunneling / ec2 commands ------------------------------------------------------------------------------------------------
 ssh-ec2:

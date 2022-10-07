@@ -8,13 +8,16 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/apifootball"
 )
 
 type Top90DAO interface {
 	CountGoals(GetGoalsFilter) (int, error)
 	GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error)
+	GetLeagues() ([]apifootball.League, error)
 	GetNewestGoal() (top90.Goal, error)
 	InsertGoal(*top90.Goal) (*top90.Goal, error)
+	InsertLeague(*apifootball.League) (*apifootball.League, error)
 }
 
 type PostgresDAO struct {
@@ -117,4 +120,45 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 	}
 
 	return goal, nil
+}
+
+func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
+	query := fmt.Sprintf("SELECT * FROM %s ORDER BY %s ASC", tableNames.Leagues, leagueColumns.Name)
+
+	var leagues []apifootball.League
+	rows, err := dao.DB.Query(query)
+	if err != nil {
+		return leagues, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var league apifootball.League
+		err := rows.Scan(&league.Id, &league.Name, &league.Type, &league.Logo, &league.CreatedAt)
+		if err != nil {
+			return leagues, err
+		}
+		leagues = append(leagues, league)
+	}
+
+	return leagues, nil
+}
+
+func (dao *PostgresDAO) InsertLeague(league *apifootball.League) (*apifootball.League, error) {
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s) VALUES ($1, $2, $3, $4) ON CONFLICT (%s) DO NOTHING RETURNING *",
+		tableNames.Leagues,
+		leagueColumns.Id, leagueColumns.Name, leagueColumns.Type, leagueColumns.Logo,
+		leagueColumns.Id,
+	)
+
+	row := dao.DB.QueryRow(
+		query, league.Id, league.Name, league.Type, league.Logo,
+	)
+
+	err := row.Scan(&league.Id, &league.Name, &league.Type, &league.Logo, &league.CreatedAt)
+	if err != nil {
+		return league, err
+	}
+
+	return league, nil
 }

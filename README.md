@@ -9,6 +9,10 @@ Goal Poller - The goal poller is a program that runs as a cron job and polls red
 
 Server - The server is the API for the website
 
+Playground - Use/Modify this locally to test random things out
+
+Leagues Ingest - Script to store leagues in the database
+
 ## Development Environment Setup
 1. Install Go
 2. Create a `.env` in the root directory and add the contents of `.env.sample` to it with real values
@@ -90,6 +94,16 @@ Finish the internal/apifootball client in order to:
 - Add Premier League only capability
 - Add true search capability based on team on player by matching goals to a player/team stored in db
 - Show team schedules and rosters and click them to see the goals
+
+## Leagues Supported
+- England - Premier League
+- Italy - Serie A
+- Spain - La Liga
+- Germany - Bundesliga
+- France - Ligue 1
+- World - UEFA Champions League
+- World - UEFA Europa League
+- World - World Cup
 
 ## Linux Commands
 

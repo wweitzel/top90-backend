@@ -10,6 +10,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/apifootball"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/scrape"
 )
@@ -25,6 +26,10 @@ type GetGoalsResponse struct {
 
 type GetGoalsCrawlResponse struct {
 	Goals []top90.Goal `json:"goals"`
+}
+
+type GetLeaguesResponse struct {
+	Leagues []apifootball.League `json:"leagues"`
 }
 
 func GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +115,25 @@ func GetGoalsCrawlHandler(w http.ResponseWriter, r *http.Request) {
 	json, _ := json.Marshal(GetGoalsCrawlResponse{
 		Goals: goals,
 	})
+	w.Write(json)
+	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
+}
+
+func GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	start := time.Now()
+
+	leagues, err := dao.GetLeagues()
+	if err != nil {
+		log.Println(err)
+	}
+
+	getLeaguesResponse := GetLeaguesResponse{
+		Leagues: leagues,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	json, _ := json.Marshal(getLeaguesResponse)
 	w.Write(json)
 	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
