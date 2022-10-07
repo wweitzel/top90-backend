@@ -14,3 +14,5 @@ docker-data
 cmd/goal_poller/.env
 cmd/test_client/.env
 cmd/server/.env
+
+**/__debug_bin
