@@ -34,8 +34,15 @@ build-server:
 save-server-image:
 	docker save -o ./bin/top90-server-v${VERSION}.tar top90-server-v${VERSION}
 
-deploy-server: build-server save-server-image
+copy-server-image-to-ec2:
 	scp -i keys/defaultec2.pem bin/top90-server-v${VERSION}.tar ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
+
+deploy-server: build-server save-server-image copy-server-image-to-ec2
+	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker load --input top90-server-v${VERSION}.tar
+	-ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker stop top90-server
+	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker container prune -f
+	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker image prune -f
+	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker run -p 7171:7171 -d --restart unless-stopped --name top90-server top90-server-v${VERSION}
 
 # playground commands -----------------------------------------------------------------------------------------------------
 run-playground:
