@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/gorilla/mux"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/apifootball"
 	"github.com/wweitzel/top90/internal/db"
@@ -97,10 +98,7 @@ func GetGoalHandler(w http.ResponseWriter, r *http.Request) {
 	EnableCors(&w)
 	start := time.Now()
 
-	id, err := strconv.Atoi(strings.Split(r.URL.Path, "/")[4])
-	if err != nil {
-		log.Println(err)
-	}
+	id := mux.Vars(r)["id"]
 
 	goal, err := dao.GetGoal(id)
 	if err != nil {

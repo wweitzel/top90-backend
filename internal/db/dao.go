@@ -14,7 +14,7 @@ import (
 type Top90DAO interface {
 	CountGoals(GetGoalsFilter) (int, error)
 	GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error)
-	GetGoal(id int) (top90.Goal, error)
+	GetGoal(id string) (top90.Goal, error)
 	GetLeagues() ([]apifootball.League, error)
 	GetNewestGoal() (top90.Goal, error)
 	InsertGoal(*top90.Goal) (*top90.Goal, error)
@@ -83,9 +83,9 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 	return list, nil
 }
 
-func (dao *PostgresDAO) GetGoal(id int) (top90.Goal, error) {
+func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id is %d", tableNames.Goals, id)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id is %s", tableNames.Goals, id)
 
 	var list top90.Goal
 	row, err := dao.DB.Query(query)
