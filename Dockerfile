@@ -7,6 +7,7 @@ RUN mkdir bin
 
 COPY go.mod ./
 COPY go.sum ./
+COPY .env.production ./.env
 
 ADD internal internal
 ADD cmd cmd

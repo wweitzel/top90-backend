@@ -2,6 +2,8 @@ DB_USER     = admin
 DB_PASSWORD = admin
 DB_NAME     = redditsoccergoals
 
+VERSION = 0.1
+
 clean:
 	rm -r bin/*
 
@@ -27,13 +29,13 @@ run-server:
 
 build-server:
 	cd cmd/server && go build -o ../../bin/server
-	docker build -t top90-server-v0 .
+	docker build -t top90-server-v${VERSION} .
 
 save-server-image:
-	docker save -o ./bin/top90-server-v0.tar top90-server-v0
+	docker save -o ./bin/top90-server-v${VERSION}.tar top90-server-v${VERSION}
 
 deploy-server: build-server save-server-image
-	scp -i keys/defaultec2.pem top90-server-v0.tar ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
+	scp -i keys/defaultec2.pem bin/top90-server-v${VERSION}.tar ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
 
 # playground commands -----------------------------------------------------------------------------------------------------
 run-playground:
