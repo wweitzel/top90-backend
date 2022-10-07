@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/s3"
@@ -36,10 +37,12 @@ func main() {
 
 	dao = db.NewPostgresDAO(DB)
 
-	http.HandleFunc("/", GetApiInfoHandler)
-	http.HandleFunc("/goals", GetGoalsHandler)
-	http.HandleFunc("/goals_crawl", GetGoalsCrawlHandler)
-	http.HandleFunc("/leagues", GetLeaguesHandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/", GetApiInfoHandler)
+	r.HandleFunc("/goals", GetGoalsHandler)
+	r.HandleFunc("/goals_crawl", GetGoalsCrawlHandler)
+	r.HandleFunc("/leagues", GetLeaguesHandler)
+	http.Handle("/", r)
 
 	// Start the server
 	port := ":7171"
