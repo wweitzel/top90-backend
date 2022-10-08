@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/gorilla/mux"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/apifootball"
 	"github.com/wweitzel/top90/internal/db"
@@ -22,6 +23,10 @@ type GetApiInfoResponse struct {
 type GetGoalsResponse struct {
 	Goals []top90.Goal `json:"goals"`
 	Total int          `json:"total"`
+}
+
+type GetGoalResponse struct {
+	Goal top90.Goal `json:"goal"`
 }
 
 type GetGoalsCrawlResponse struct {
@@ -88,6 +93,33 @@ func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getGoalsResponse)
+	w.Write(json)
+	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
+}
+
+func GetGoalHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	start := time.Now()
+
+	id := mux.Vars(r)["id"]
+
+	goal, err := dao.GetGoal(id)
+	if err != nil {
+		log.Println(err)
+	}
+
+	url, err := s3Client.NewSignedGetURL(goal.S3ObjectKey, config.AwsBucketName, time.Minute*1)
+	if err != nil {
+		log.Println(err)
+	}
+	goal.PresignedUrl = url
+
+	getGoalResponse := GetGoalResponse{
+		Goal: goal,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	json, _ := json.Marshal(getGoalResponse)
 	w.Write(json)
 	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }

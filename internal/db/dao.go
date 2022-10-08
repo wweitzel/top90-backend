@@ -15,6 +15,7 @@ type Top90DAO interface {
 	CountGoals(GetGoalsFilter) (int, error)
 	CountTeams() (int, error)
 	GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error)
+	GetGoal(id string) (top90.Goal, error)
 	GetLeagues() ([]apifootball.League, error)
 	GetNewestGoal() (top90.Goal, error)
 	GetTeams() ([]apifootball.Team, error)
@@ -95,6 +96,21 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 	}
 
 	return list, nil
+}
+
+func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = $1", tableNames.Goals, goalColumns.Id)
+
+	var goal top90.Goal
+	row := dao.DB.QueryRow(query, id)
+
+	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt)
+	if err != nil {
+		return goal, err
+	}
+
+	return goal, nil
 }
 
 func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
