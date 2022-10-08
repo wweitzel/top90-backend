@@ -2,6 +2,7 @@
 
 .env
 .env.production
+.env.production.local
 keys
 bin
 api-football

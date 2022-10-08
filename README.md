@@ -14,38 +14,37 @@ https://top90.io
 # Contributing Guide
 Anyone is welcome to submit a PR. PRs should be tested and verified locally first if possible.
 
-## Development Environment Setup
-1. Install Go
-2. Create a `.env` in the root directory and add the contents of `.env.sample` to it with real values
-3. Start dev db and s3 in docker
+## Running Locally
+1. Install dependencies. If using homebrew you can run the following.
 ```
-$ docker-compose up
-```
-4. Install awscli
-```
+$ brew install go
+$ brew install --cask docker
 $ brew install awscli
-```
-5. Create s3 bucket in local s3. This is needed for storing goal videos locally.
-```
-$ aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
-```
-6. Install golang-migrate
-```
 $ brew install golang-migrate
 ```
-7. Seed local data
+2. Create a `.env` in the root directory and add the contents of `.env.sample` to it with real values
+```
+cp .env.sample .env
+```
+3. Start dev db and s3 in docker.
+```
+# Make sure docker daemon is running
+$ docker-compose up
+```
+4. Seed local data
 ```
 $ make seed
+# Note: Answer "y" to the promopt when you see it
 ```
-8. Go to http://localhost:8090/?pgsql=db
-9. Login with the following credentials
+5. Go to http://localhost:8090/?pgsql=db
+6. Login with the following credentials
 ```
 username: admin
 password: admin
 database: redditsoccergoals
 ```
-10. Look at the tables in the UI and verify they have data
-11. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
+7. Look at the tables in the UI and verify they have data
+8. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
 
 ## Debugging
 For vscode, make a `.vscode/launch.json` file and paste the following in it.
@@ -70,20 +69,20 @@ For vscode, make a `.vscode/launch.json` file and paste the following in it.
             "cwd": "./"
         },
         {
-            "name": "Debug Playground",
+            "name": "ApiFootball Ingest",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "./cmd/playground",
+            "program": "./cmd/apifootball_ingest",
             "cwd": "./"
         }
     ]
 }
 ```
-The above configuration will give you the options to "Debug Server" and "Debug Poller" in the "Run and Debug" tab of vscode.
+The above configuration will give you the options to debug in the "Run and Debug" tab of vscode.
 
 ## Resetting data
-If you want to start fresh, you can easily wipe all your data by deleting the two folders in `docker-data`.
+If you want to start fresh, you can easily wipe all your data by deleting the two folders in `docker-data` or simpley run `make seed` which will repopulate the local db/s3. 
 
 ## Remaining Work
 Finish the internal/apifootball client in order to:
