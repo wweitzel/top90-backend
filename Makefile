@@ -7,7 +7,8 @@ VERSION = 0.1
 clean:
 	rm -r bin/*
 
-build-all: build-poller
+build-all:
+	go build -v ./...
 
 # poller commands ---------------------------------------------------------------------------------------------------------
 run-poller:
@@ -48,9 +49,9 @@ deploy-server: build-server save-server-image copy-server-image-to-ec2
 run-playground:
 	go run ./cmd/playground/...
 
-# leagues ingest commands --------------------------------------------------------------------------------------------------
-run-leagues-ingest:
-	go run ./cmd/leagues_ingest/...
+# apifootball ingest commands --------------------------------------------------------------------------------------------------
+run-apifootball-ingest:
+	go run ./cmd/apifootball_ingest/... ${TYPE}
 
 # db migration commands ---------------------------------------------------------------------------------------------------
 migrate-up:
@@ -67,8 +68,8 @@ ssh-ec2:
 	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com
 
 # -N do not execute remote command | -v for verbose mode | -f to make it go to the background
-tunnel-db:
-	ssh -i keys/defaultec2.pem -N -L 5432:reddit-soccer-goals.cxdhgbr8e3pn.us-east-1.rds.amazonaws.com:5432 ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com -v
+tunnel-prod-db:
+	ssh -i keys/defaultec2.pem -N -L 5433:reddit-soccer-goals.cxdhgbr8e3pn.us-east-1.rds.amazonaws.com:5433 ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com -v
 
 get-poller-logs:
 	scp -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/goal_poller_output.txt .
@@ -76,3 +77,7 @@ get-poller-logs:
 # utility commands --------------------------------------------------------------------------------------------------------
 create-s3-bucket:
 	aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
+
+seed: migrate-down migrate-up create-s3-bucket run-poller
+	make run-apifootball-ingest TYPE=leagues
+	make run-apifootball-ingest TYPE=teams

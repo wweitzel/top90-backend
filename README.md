@@ -5,13 +5,14 @@ Top90 is a website that populates with soccer goals in real time as they happen 
 https://top90.io
 
 ## Applications in this repo
-Goal Poller - The goal poller is a program that runs as a cron job and polls reddit.com/r/soccer for new goal videos to store in db
+- server - The server is the API for the website
 
-Server - The server is the API for the website
+- goal_poller - The goal poller is a script that runs as a cron job and polls reddit.com/r/soccer for new goals/videos to store in db/s3
 
-Playground - Use/Modify this locally to test random things out
+- apifootball_ingest - Script to store apifootball data in the database
 
-Leagues Ingest - Script to store leagues in the database
+# Contributing Guide
+Anyone is welcome to submit a PR. PRs should be tested and verified locally first if possible.
 
 ## Development Environment Setup
 1. Install Go
@@ -32,24 +33,19 @@ $ aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
 ```
 $ brew install golang-migrate
 ```
-7. Run db migrations
+7. Seed local data
 ```
-$ make migrate-up
+$ make seed
 ```
-8. Create tmp directory at project root
-9. Run the poller to store some goals. This will take about 2-5 min to run.
-```
-$ make run-poller
-```
-10. Go to http://localhost:8090/?pgsql=db
-11. Login with the following credentials
+8. Go to http://localhost:8090/?pgsql=db
+9. Login with the following credentials
 ```
 username: admin
 password: admin
 database: redditsoccergoals
 ```
-12. Look at the goals table in the ui and verify it has goals
-13. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
+10. Look at the tables in the UI and verify they have data
+11. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
 
 ## Debugging
 For vscode, make a `.vscode/launch.json` file and paste the following in it.
@@ -116,3 +112,12 @@ $ docker run -p 7171:7171 -d --restart unless-stopped top90-server-v0
 ```
 $ docker-compose run --rm certbot renew
 ```
+
+fixtures
+id
+referee
+date
+home_team_id
+away_team_id
+league_id
+season

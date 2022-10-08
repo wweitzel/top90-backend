@@ -3,6 +3,7 @@ package db
 type TableNames struct {
 	Goals   string
 	Leagues string
+	Teams   string
 }
 
 type GoalColumns struct {
@@ -22,9 +23,20 @@ type LeagueColumns struct {
 	Logo string
 }
 
+type TeamColumns struct {
+	Id       string
+	Name     string
+	Code     string
+	Country  string
+	Founded  string
+	National string
+	Logo     string
+}
+
 var tableNames = TableNames{
 	Goals:   "goals",
 	Leagues: "leagues",
+	Teams:   "teams",
 }
 
 var goalColumns = GoalColumns{
@@ -42,4 +54,14 @@ var leagueColumns = LeagueColumns{
 	Name: "name",
 	Type: "type",
 	Logo: "logo",
+}
+
+var teamColumns = TeamColumns{
+	Id:       "id",
+	Name:     "name",
+	Code:     "code",
+	Country:  "country",
+	Founded:  "founded",
+	National: "national",
+	Logo:     "logo",
 }
