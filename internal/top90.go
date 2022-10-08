@@ -14,7 +14,6 @@ type Goal struct {
 	RedditLinkUrl       string
 	RedditPostTitle     string
 	RedditPostCreatedAt time.Time
-	ExternalSourceUrl   string
 	S3ObjectKey         string
 	PresignedUrl        string
 	CreatedAt           string
@@ -31,9 +30,9 @@ type Config struct {
 	AwsBucketName      string
 }
 
-func LoadConfig() Config {
+func LoadConfig(fileNames ...string) Config {
 	// Export all environment variables in .env file
-	err := dotenv.Load()
+	err := dotenv.Load(fileNames...)
 	if err != nil {
 		log.Println("Could not load env file:", err)
 	}

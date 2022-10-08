@@ -69,7 +69,7 @@ ssh-ec2:
 
 # -N do not execute remote command | -v for verbose mode | -f to make it go to the background
 tunnel-prod-db:
-	ssh -i keys/defaultec2.pem -N -L 5433:reddit-soccer-goals.cxdhgbr8e3pn.us-east-1.rds.amazonaws.com:5433 ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com -v
+	ssh -i keys/defaultec2.pem -N -L 5433:reddit-soccer-goals.cxdhgbr8e3pn.us-east-1.rds.amazonaws.com:5432 ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com -v
 
 get-poller-logs:
 	scp -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/goal_poller_output.txt .
