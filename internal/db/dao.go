@@ -100,21 +100,17 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 
 func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = %s", tableNames.Goals, id)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = $1", tableNames.Goals, goalColumns.Id)
 
-	var video top90.Goal
-	row, err := dao.DB.Query(query)
-	if err != nil {
-		return video, err
-	}
-	defer row.Close()
+	var goal top90.Goal
+	row := dao.DB.QueryRow(query, id)
 
-	err = row.Scan(&video.Id, &video.RedditFullname, &video.RedditLinkUrl, &video.RedditPostTitle, &video.RedditPostCreatedAt, &video.S3ObjectKey, &video.CreatedAt)
+	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt)
 	if err != nil {
-		return video, err
+		return goal, err
 	}
 
-	return video, nil
+	return goal, nil
 }
 
 func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
