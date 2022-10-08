@@ -3,16 +3,10 @@ package main
 import (
 	"database/sql"
 	"log"
-	"net/http"
-	"os"
-	"time"
-
-	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/apifootball"
-	"github.com/wweitzel/top90/internal/db"
 )
 
-var LEAGUES_TO_INGEST = []LeagueCountryAndName{
+// TODO: Take from command line input
+var LEAGUES_TO_INGEST = []leagueCountryAndName{
 	{Country: "England", Name: "Premier League"},
 	{Country: "Italy", Name: "Serie A"},
 	{Country: "Spain", Name: "La Liga"},
@@ -23,43 +17,21 @@ var LEAGUES_TO_INGEST = []LeagueCountryAndName{
 	{Country: "World", Name: "World Cup"},
 }
 
-type LeagueCountryAndName struct {
+type leagueCountryAndName struct {
 	Country string
 	Name    string
 }
 
-func main() {
-	log.SetFlags(log.Ltime)
-
-	// Load config from .env into environment variables
-	config := top90.LoadConfig()
-
-	// Connect to database
-	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
-	if err != nil {
-		log.Fatalf("Could not setup database: %v", err)
-	}
-	defer DB.Close()
-
-	// Create dao for accessing the db
-	dao := db.NewPostgresDAO(DB)
-
-	host := os.Getenv("API_FOOTBALL_RAPID_API_HOST")
-	apiKey := os.Getenv("API_FOOTBALL_RAPID_API_KEY")
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-
-	// Instantiate an apifootball api client
-	client := apifootball.NewClient(host, apiKey, httpClient)
-
+func (app *App) IngestLeagues() {
 	for _, leagueToIngest := range LEAGUES_TO_INGEST {
 		// Get the league from apifootball
-		league, err := client.GetLeague(leagueToIngest.Country, leagueToIngest.Name)
+		league, err := app.client.GetLeague(leagueToIngest.Country, leagueToIngest.Name)
 		if err != nil {
 			log.Fatalf("Could not get league for country %s, name %s \n%v", leagueToIngest.Country, leagueToIngest.Name, err)
 		}
 
 		// Insert league into the db
-		createdLeague, err := dao.InsertLeague(&league)
+		createdLeague, err := app.dao.InsertLeague(&league)
 		if err == sql.ErrNoRows {
 			log.Printf("Already stored league for id %d", league.Id)
 		} else if err != nil {

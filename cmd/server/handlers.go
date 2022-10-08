@@ -32,6 +32,10 @@ type GetLeaguesResponse struct {
 	Leagues []apifootball.League `json:"leagues"`
 }
 
+type GetTeamsResponse struct {
+	Teams []apifootball.Team `json:"teams"`
+}
+
 func GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
 	EnableCors(&w)
 	start := time.Now()
@@ -70,7 +74,7 @@ func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range goals {
-		url, err := s3Client.NewSignedGetURL(goals[i].S3ObjectKey, config.AwsBucketName, time.Minute*1)
+		url, err := s3Client.NewSignedGetURL(goals[i].S3ObjectKey, config.AwsBucketName, time.Minute*10)
 		if err != nil {
 			log.Println(err)
 		}
@@ -134,6 +138,25 @@ func GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getLeaguesResponse)
+	w.Write(json)
+	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
+}
+
+func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	start := time.Now()
+
+	teams, err := dao.GetTeams()
+	if err != nil {
+		log.Println(err)
+	}
+
+	getTeamsResponse := GetTeamsResponse{
+		Teams: teams,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	json, _ := json.Marshal(getTeamsResponse)
 	w.Write(json)
 	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
