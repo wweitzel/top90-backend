@@ -6,7 +6,18 @@ import (
 
 const teamsUrl = baseUrl + "teams"
 
-func (client *Client) GetTeams(league, season int) (*GetTeamsResponse, error) {
+type Team struct {
+	Id        int
+	Name      string
+	Code      string
+	Country   string
+	Founded   int
+	National  bool
+	Logo      string
+	CreatedAt string
+}
+
+func (client *Client) GetTeams(league, season int) ([]Team, error) {
 	req, err := client.newRequest("GET", teamsUrl)
 	if err != nil {
 		return nil, err
@@ -24,5 +35,25 @@ func (client *Client) GetTeams(league, season int) (*GetTeamsResponse, error) {
 		return nil, err
 	}
 
-	return getTeamsResponse, nil
+	var teams = toTeams(getTeamsResponse)
+
+	return teams, nil
+}
+
+func toTeams(response *GetTeamsResponse) []Team {
+	var teams []Team
+
+	for _, t := range response.Data {
+		team := Team{}
+		team.Id = t.Team.ID
+		team.Name = t.Team.Name
+		team.Code = t.Team.Code
+		team.Country = t.Team.Country
+		team.Founded = t.Team.Founded
+		team.National = t.Team.National
+		team.Logo = t.Team.Logo
+		teams = append(teams, team)
+	}
+
+	return teams
 }

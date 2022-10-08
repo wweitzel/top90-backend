@@ -7,21 +7,6 @@ import (
 
 const fixturesUrl = baseUrl + "fixtures"
 
-type Teams struct {
-	Home struct {
-		ID     int
-		Name   string
-		Logo   string
-		Winner bool
-	}
-	Away struct {
-		ID     int
-		Name   string
-		Logo   string
-		Winner bool
-	}
-}
-
 type Fixture struct {
 	ID        int
 	Referee   string
@@ -42,7 +27,20 @@ type Fixture struct {
 		Short   string
 		Elapsed int
 	}
-	Teams Teams
+	Teams struct {
+		Home struct {
+			ID     int
+			Name   string
+			Logo   string
+			Winner bool
+		}
+		Away struct {
+			ID     int
+			Name   string
+			Logo   string
+			Winner bool
+		}
+	}
 }
 
 func (client *Client) GetFixtures(league, season int) ([]Fixture, error) {
@@ -91,7 +89,20 @@ func toFixtures(response *GetFixturesResponse) []Fixture {
 			Name string
 			City string
 		}(f.Fixture.Venue)
-		fixture.Teams = Teams(f.Teams)
+		fixture.Teams = struct {
+			Home struct {
+				ID     int
+				Name   string
+				Logo   string
+				Winner bool
+			}
+			Away struct {
+				ID     int
+				Name   string
+				Logo   string
+				Winner bool
+			}
+		}(f.Teams)
 		fixtures = append(fixtures, fixture)
 	}
 
