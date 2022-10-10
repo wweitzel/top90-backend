@@ -20,7 +20,7 @@ type GetFixturesResponse struct {
 			Referee   string    `json:"referee"`
 			Timezone  string    `json:"timezone"`
 			Date      time.Time `json:"date"`
-			Timestamp int       `json:"timestamp"`
+			Timestamp int64     `json:"timestamp"`
 			Periods   struct {
 				First  int `json:"first"`
 				Second int `json:"second"`
@@ -37,7 +37,7 @@ type GetFixturesResponse struct {
 			} `json:"status"`
 		} `json:"fixture"`
 		League struct {
-			ID      int    `json:"id"`
+			Id      int    `json:"id"`
 			Name    string `json:"name"`
 			Country string `json:"country"`
 			Logo    string `json:"logo"`
@@ -47,13 +47,13 @@ type GetFixturesResponse struct {
 		} `json:"league"`
 		Teams struct {
 			Home struct {
-				ID     int    `json:"id"`
+				Id     int    `json:"id"`
 				Name   string `json:"name"`
 				Logo   string `json:"logo"`
 				Winner bool   `json:"winner"`
 			} `json:"home"`
 			Away struct {
-				ID     int    `json:"id"`
+				Id     int    `json:"id"`
 				Name   string `json:"name"`
 				Logo   string `json:"logo"`
 				Winner bool   `json:"winner"`

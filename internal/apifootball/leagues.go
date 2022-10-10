@@ -1,5 +1,7 @@
 package apifootball
 
+import "errors"
+
 const leaguesUrl = baseUrl + "leagues"
 
 type League struct {
@@ -23,9 +25,13 @@ func (client *Client) GetLeague(country, leagueName string) (League, error) {
 	req.URL.RawQuery = queryParams.Encode()
 
 	getLeaguesResponse := &GetLeaguesResponse{}
-	_, err = client.do(req, getLeaguesResponse)
+	resp, err := client.do(req, getLeaguesResponse)
 	if err != nil {
 		return League{}, err
+	}
+
+	if resp.StatusCode != 200 {
+		return League{}, errors.New(resp.Status)
 	}
 
 	return toLeagues(*getLeaguesResponse)[0], nil

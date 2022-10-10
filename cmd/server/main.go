@@ -39,6 +39,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", GetApiInfoHandler)
+	r.HandleFunc("/fixtures", GetFixturesHandler)
 	r.HandleFunc("/goals", GetGoalsHandler)
 	r.HandleFunc("/goals/{id}", GetGoalHandler)
 	r.HandleFunc("/goals_crawl", GetGoalsCrawlHandler)

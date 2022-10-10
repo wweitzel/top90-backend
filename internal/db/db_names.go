@@ -1,9 +1,10 @@
 package db
 
 type TableNames struct {
-	Goals   string
-	Leagues string
-	Teams   string
+	Goals    string
+	Leagues  string
+	Teams    string
+	Fixtures string
 }
 
 type GoalColumns struct {
@@ -33,10 +34,22 @@ type TeamColumns struct {
 	Logo     string
 }
 
+type FixtureColumns struct {
+	Id         string
+	Referee    string
+	Date       string
+	HomeTeamId string
+	AwayTeamId string
+	LeagueId   string
+	Season     string
+	CreatedAt  string
+}
+
 var tableNames = TableNames{
-	Goals:   "goals",
-	Leagues: "leagues",
-	Teams:   "teams",
+	Goals:    "goals",
+	Leagues:  "leagues",
+	Teams:    "teams",
+	Fixtures: "fixtures",
 }
 
 var goalColumns = GoalColumns{
@@ -64,4 +77,15 @@ var teamColumns = TeamColumns{
 	Founded:  "founded",
 	National: "national",
 	Logo:     "logo",
+}
+
+var fixtureColumns = FixtureColumns{
+	Id:         "id",
+	Referee:    "referee",
+	Date:       "date",
+	HomeTeamId: "home_team_id",
+	AwayTeamId: "away_team_id",
+	LeagueId:   "league_id",
+	Season:     "season",
+	CreatedAt:  "created_at",
 }

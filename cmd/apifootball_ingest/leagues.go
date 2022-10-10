@@ -27,7 +27,7 @@ func (app *App) IngestLeagues() {
 		// Get the league from apifootball
 		league, err := app.client.GetLeague(leagueToIngest.Country, leagueToIngest.Name)
 		if err != nil {
-			log.Fatalf("Could not get league for country %s, name %s \n%v", leagueToIngest.Country, leagueToIngest.Name, err)
+			log.Fatalf("Could not get league for country %s, name %s due to %v\n", leagueToIngest.Country, leagueToIngest.Name, err)
 		}
 
 		// Insert league into the db
