@@ -16,8 +16,16 @@ import (
 	"github.com/wweitzel/top90/internal/scrape"
 )
 
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
 type GetApiInfoResponse struct {
 	Message string `json:"message"`
+}
+
+type GetFixturesResponse struct {
+	Fixtures []apifootball.Fixture `json:"fixtures"`
 }
 
 type GetGoalsResponse struct {
@@ -50,6 +58,44 @@ func GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(apiInfo)
+	w.Write(json)
+	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
+}
+
+func GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	start := time.Now()
+
+	queryParams := r.URL.Query()
+
+	leagueParam := queryParams.Get("leagueId")
+	if leagueParam == "" {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json, _ := json.Marshal(ErrorResponse{Message: "Bad request. leagueId query param must be set."})
+		w.Write(json)
+		log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
+		return
+	}
+
+	leagueId, err := strconv.Atoi(leagueParam)
+	if err != nil {
+		log.Panicf("Failed converting leagueId query param to int %v", err)
+	}
+
+	filter := db.GetFixuresFilter{LeagueId: leagueId}
+
+	fixtures, err := dao.GetFixtures(filter)
+	if err != nil {
+		log.Println(err)
+	}
+
+	getFixturesResponse := GetFixturesResponse{
+		Fixtures: fixtures,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	json, _ := json.Marshal(getFixturesResponse)
 	w.Write(json)
 	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }

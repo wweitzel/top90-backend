@@ -1,6 +1,7 @@
 package apifootball
 
 import (
+	"errors"
 	"strconv"
 	"time"
 )
@@ -8,39 +9,27 @@ import (
 const fixturesUrl = baseUrl + "fixtures"
 
 type Fixture struct {
-	ID        int
+	Id        int
 	Referee   string
-	Timezone  string
 	Date      time.Time
-	Timestamp int
-	Periods   struct {
-		First  int
-		Second int
-	}
-	Venue struct {
-		ID   int
-		Name string
-		City string
-	}
-	Status struct {
-		Long    string
-		Short   string
-		Elapsed int
-	}
-	Teams struct {
+	Timestamp int64
+	Teams     struct {
 		Home struct {
-			ID     int
+			Id     int
 			Name   string
 			Logo   string
 			Winner bool
 		}
 		Away struct {
-			ID     int
+			Id     int
 			Name   string
 			Logo   string
 			Winner bool
 		}
 	}
+	LeagueId  int
+	Season    int
+	CreatedAt string
 }
 
 func (client *Client) GetFixtures(league, season int) ([]Fixture, error) {
@@ -56,9 +45,13 @@ func (client *Client) GetFixtures(league, season int) ([]Fixture, error) {
 	req.URL.RawQuery = queryParams.Encode()
 
 	getFixturesResponse := &GetFixturesResponse{}
-	_, err = client.do(req, getFixturesResponse)
+	resp, err := client.do(req, getFixturesResponse)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, errors.New(resp.Status)
 	}
 
 	var fixtures = toFixtures(getFixturesResponse)
@@ -71,38 +64,26 @@ func toFixtures(response *GetFixturesResponse) []Fixture {
 
 	for _, f := range response.Data {
 		fixture := Fixture{}
-		fixture.ID = f.Fixture.ID
-		fixture.Date = f.Fixture.Date
-		fixture.Status = struct {
-			Long    string
-			Short   string
-			Elapsed int
-		}(f.Fixture.Status)
+		fixture.Id = f.Fixture.ID
 		fixture.Timestamp = f.Fixture.Timestamp
+		fixture.Date = f.Fixture.Date
 		fixture.Referee = f.Fixture.Referee
-		fixture.Periods = struct {
-			First  int
-			Second int
-		}(f.Fixture.Periods)
-		fixture.Venue = struct {
-			ID   int
-			Name string
-			City string
-		}(f.Fixture.Venue)
 		fixture.Teams = struct {
 			Home struct {
-				ID     int
+				Id     int
 				Name   string
 				Logo   string
 				Winner bool
 			}
 			Away struct {
-				ID     int
+				Id     int
 				Name   string
 				Logo   string
 				Winner bool
 			}
 		}(f.Teams)
+		fixture.LeagueId = f.League.Id
+		fixture.Season = f.League.Season
 		fixtures = append(fixtures, fixture)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -14,11 +15,13 @@ import (
 type Top90DAO interface {
 	CountGoals(GetGoalsFilter) (int, error)
 	CountTeams() (int, error)
+	GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error)
 	GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error)
 	GetGoal(id string) (top90.Goal, error)
 	GetLeagues() ([]apifootball.League, error)
 	GetNewestGoal() (top90.Goal, error)
 	GetTeams() ([]apifootball.Team, error)
+	InsertFixture(*apifootball.Fixture) (*apifootball.Fixture, error)
 	InsertGoal(*top90.Goal) (*top90.Goal, error)
 	InsertLeague(*apifootball.League) (*apifootball.League, error)
 	InsertTeam(*apifootball.Team) (*apifootball.Team, error)
@@ -35,6 +38,10 @@ type Pagination struct {
 
 type GetGoalsFilter struct {
 	SearchTerm string
+}
+
+type GetFixuresFilter struct {
+	LeagueId int
 }
 
 func NewPostgresDAO(db *sql.DB) Top90DAO {
@@ -69,6 +76,73 @@ func (dao *PostgresDAO) CountTeams() (int, error) {
 	return count, nil
 }
 
+func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error) {
+	query := fmt.Sprintf(
+		`SELECT
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			home_teams.name as home_team_name,
+			home_teams.logo as home_team_logo,
+			away_teams.name as away_team_name,
+			away_teams.logo as away_team_logo
+			FROM %s
+		JOIN %s home_teams ON home_teams.%s=%s
+		JOIN %s away_teams ON away_teams.%s=%s
+		WHERE %s = $1 ORDER BY %s ASC`,
+		tableNames.Fixtures+"."+fixtureColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.Referee,
+		tableNames.Fixtures+"."+fixtureColumns.Date,
+		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.Season,
+		tableNames.Fixtures+"."+fixtureColumns.CreatedAt,
+		tableNames.Fixtures,
+		tableNames.Teams,
+		teamColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
+		tableNames.Teams,
+		teamColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		fixtureColumns.LeagueId,
+		fixtureColumns.Date)
+
+	var fixtures []apifootball.Fixture
+	rows, err := dao.DB.Query(query, filter.LeagueId)
+	if err != nil {
+		return fixtures, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var fixture apifootball.Fixture
+		err := rows.Scan(
+			&fixture.Id,
+			&fixture.Referee,
+			&fixture.Date,
+			&fixture.Teams.Home.Id,
+			&fixture.Teams.Away.Id,
+			&fixture.Season,
+			&fixture.CreatedAt,
+			&fixture.Teams.Home.Name,
+			&fixture.Teams.Home.Logo,
+			&fixture.Teams.Away.Name,
+			&fixture.Teams.Away.Logo)
+		if err != nil {
+			return fixtures, err
+		}
+		fixture.Timestamp = fixture.Date.Unix()
+		fixture.LeagueId = filter.LeagueId
+		fixtures = append(fixtures, fixture)
+	}
+
+	return fixtures, nil
+}
+
 func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error) {
 	filter.SearchTerm = "%" + filter.SearchTerm + "%"
 
@@ -79,23 +153,23 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 	query := fmt.Sprintf("SELECT * FROM %s WHERE reddit_post_title ILIKE $1 ORDER BY %s DESC OFFSET $2 LIMIT $3",
 		tableNames.Goals, goalColumns.RedditPostCreatedAt)
 
-	var list []top90.Goal
+	var goals []top90.Goal
 	rows, err := dao.DB.Query(query, filter.SearchTerm, pagination.Skip, pagination.Limit)
 	if err != nil {
-		return list, err
+		return goals, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var video top90.Goal
-		err := rows.Scan(&video.Id, &video.RedditFullname, &video.RedditLinkUrl, &video.RedditPostTitle, &video.RedditPostCreatedAt, &video.S3ObjectKey, &video.CreatedAt)
+		var goal top90.Goal
+		err := rows.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt)
 		if err != nil {
-			return list, err
+			return goals, err
 		}
-		list = append(list, video)
+		goals = append(goals, goal)
 	}
 
-	return list, nil
+	return goals, nil
 }
 
 func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
@@ -140,17 +214,17 @@ func (dao *PostgresDAO) GetNewestGoal() (top90.Goal, error) {
 		Skip:  0,
 		Limit: 1,
 	}
-	newestDbVideos, err := dao.GetGoals(pagination, GetGoalsFilter{})
+	newestDbGoals, err := dao.GetGoals(pagination, GetGoalsFilter{})
 	if err != nil {
 		return top90.Goal{}, err
 	}
 
-	var newestDbVideo top90.Goal
-	if len(newestDbVideos) > 0 {
-		newestDbVideo = newestDbVideos[0]
+	var newestDbGoal top90.Goal
+	if len(newestDbGoals) > 0 {
+		newestDbGoal = newestDbGoals[0]
 	}
 
-	return newestDbVideo, nil
+	return newestDbGoal, nil
 }
 
 func (dao *PostgresDAO) GetTeams() ([]apifootball.Team, error) {
@@ -173,6 +247,25 @@ func (dao *PostgresDAO) GetTeams() ([]apifootball.Team, error) {
 	}
 
 	return teams, nil
+}
+
+func (dao *PostgresDAO) InsertFixture(fixture *apifootball.Fixture) (*apifootball.Fixture, error) {
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
+		tableNames.Fixtures,
+		fixtureColumns.Id, fixtureColumns.Referee, fixtureColumns.Date, fixtureColumns.HomeTeamId, fixtureColumns.AwayTeamId, fixtureColumns.LeagueId, fixtureColumns.Season,
+		fixtureColumns.Id,
+	)
+
+	row := dao.DB.QueryRow(
+		query, fixture.Id, fixture.Referee, time.Unix(fixture.Timestamp, 0), fixture.Teams.Home.Id, fixture.Teams.Away.Id, fixture.LeagueId, fixture.Season,
+	)
+
+	err := row.Scan(&fixture.Id, &fixture.Referee, &fixture.Date, &fixture.Teams.Home.Id, &fixture.Teams.Away.Id, &fixture.LeagueId, &fixture.Season, &fixture.CreatedAt)
+	if err != nil {
+		return fixture, err
+	}
+
+	return fixture, nil
 }
 
 func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {

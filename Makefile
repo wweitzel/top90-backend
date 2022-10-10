@@ -81,3 +81,4 @@ create-s3-bucket:
 seed: migrate-down migrate-up create-s3-bucket run-poller
 	make run-apifootball-ingest TYPE=leagues
 	make run-apifootball-ingest TYPE=teams
+	make run-apifootball-ingest TYPE=fixtures

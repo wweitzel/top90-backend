@@ -24,6 +24,8 @@ func main() {
 		app.IngestLeagues()
 	case "teams":
 		app.IngestTeams()
+	case "fixtures":
+		app.IngestFixtures()
 	default:
 		log.Fatalln("Unkown cmomand option", resourceToIngest)
 	}

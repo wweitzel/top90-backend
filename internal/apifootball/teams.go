@@ -1,6 +1,7 @@
 package apifootball
 
 import (
+	"errors"
 	"strconv"
 )
 
@@ -30,9 +31,13 @@ func (client *Client) GetTeams(league, season int) ([]Team, error) {
 	req.URL.RawQuery = queryParams.Encode()
 
 	getTeamsResponse := &GetTeamsResponse{}
-	_, err = client.do(req, getTeamsResponse)
+	resp, err := client.do(req, getTeamsResponse)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, errors.New(resp.Status)
 	}
 
 	var teams = toTeams(getTeamsResponse)

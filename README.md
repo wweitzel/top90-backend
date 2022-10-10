@@ -32,6 +32,8 @@ cp .env.sample .env
 $ docker-compose up
 ```
 4. Seed local data
+
+NOTE: You need to get an api key from https://rapidapi.com/api-sports/api/api-football/ and set it as API_FOOTBALL_RAPID_API_KEY in your .env for the seed to work!
 ```
 $ make seed
 # Note: Answer "y" to the promopt when you see it
@@ -81,14 +83,22 @@ For vscode, make a `.vscode/launch.json` file and paste the following in it.
 ```
 The above configuration will give you the options to debug in the "Run and Debug" tab of vscode.
 
-## Resetting data
+## Creating a New Migration
+Run the following and modify the generated files. See https://github.com/golang-migrate/migrate for details.
+```
+migrate create -ext sql -dir internal/db/migrations -seq name_of_migration
+```
+
+## Resetting Data
 If you want to start fresh, you can easily wipe all your data by deleting the two folders in `docker-data` or simpley run `make seed` which will repopulate the local db/s3. 
 
-## Remaining Work
+# Remaining Work
 Finish the internal/apifootball client in order to:
 - Add Premier League only capability
 - Add true search capability based on team on player by matching goals to a player/team stored in db
 - Show team schedules and rosters and click them to see the goals
+- Use int64 for all id columns
+- Convert createdAt fields to timestamp with timezone
 
 ## Leagues Supported
 - England - Premier League

@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS fixtures(
+  id INT PRIMARY KEY,
+  referee VARCHAR(500),
+  date TIMESTAMP WITH TIME ZONE NOT NULL,
+  home_team_id INT REFERENCES teams(id) NOT NULL,
+  away_team_id INT REFERENCES teams(id) NOT NULL,
+  league_id INT REFERENCES leagues(id) NOT NULL,
+  season INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

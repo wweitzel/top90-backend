@@ -5,10 +5,10 @@ import (
 	"log"
 )
 
-// TODO: Take from command line input
-const SEASON = 2022
-
 func (app *App) IngestTeams() {
+	// TODO: Take from command line input
+	const SEASON = 2022
+
 	leagues, err := app.dao.GetLeagues()
 
 	if err != nil {
@@ -18,7 +18,7 @@ func (app *App) IngestTeams() {
 	for _, league := range leagues {
 		teams, err := app.client.GetTeams(league.Id, SEASON)
 		if err != nil {
-			log.Fatalf("Could not get teams for leagueId %d, season %d\n", league.Id, SEASON)
+			log.Fatalf("Could not get teams for leagueId %d, season %d due to %v\n", league.Id, SEASON, err)
 		}
 
 		for _, team := range teams {
