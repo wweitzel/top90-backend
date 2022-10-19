@@ -38,10 +38,12 @@ type Pagination struct {
 
 type GetGoalsFilter struct {
 	SearchTerm string
+	StartDate  string
 }
 
 type GetFixuresFilter struct {
 	LeagueId int
+	Date     time.Time
 }
 
 func NewPostgresDAO(db *sql.DB) Top90DAO {
@@ -76,7 +78,37 @@ func (dao *PostgresDAO) CountTeams() (int, error) {
 	return count, nil
 }
 
+func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any) {
+	whereClause := "WHERE"
+
+	if filter.LeagueId != 0 {
+		whereClause = whereClause + fmt.Sprintf(" %s = $1", fixtureColumns.LeagueId)
+		args = append(args, filter.LeagueId)
+	} else {
+		whereClause = whereClause + " $1"
+		args = append(args, "TRUE")
+	}
+
+	if !filter.Date.IsZero() {
+		searchStartDate := filter.Date.Add(-12 * time.Hour)
+		searchEndtDate := filter.Date.Add(12 * time.Hour)
+
+		whereClause = whereClause + fmt.Sprintf(" AND %s >= $2 and %s <= $3",
+			tableNames.Fixtures+"."+fixtureColumns.Date,
+			tableNames.Fixtures+"."+fixtureColumns.Date,
+		)
+		args = append(args, searchStartDate)
+		args = append(args, searchEndtDate)
+	}
+
+	return whereClause, args
+}
+
 func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error) {
+	var args []any
+
+	whereClause, args := getFixturesWhereClause(filter, args)
+
 	query := fmt.Sprintf(
 		`SELECT
 			%s,
@@ -93,7 +125,7 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 			FROM %s
 		JOIN %s home_teams ON home_teams.%s=%s
 		JOIN %s away_teams ON away_teams.%s=%s
-		WHERE %s = $1 ORDER BY %s ASC`,
+		%s ORDER BY %s ASC`,
 		tableNames.Fixtures+"."+fixtureColumns.Id,
 		tableNames.Fixtures+"."+fixtureColumns.Referee,
 		tableNames.Fixtures+"."+fixtureColumns.Date,
@@ -108,11 +140,11 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 		tableNames.Teams,
 		teamColumns.Id,
 		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
-		fixtureColumns.LeagueId,
+		whereClause,
 		fixtureColumns.Date)
 
 	var fixtures []apifootball.Fixture
-	rows, err := dao.DB.Query(query, filter.LeagueId)
+	rows, err := dao.DB.Query(query, args...)
 	if err != nil {
 		return fixtures, err
 	}
