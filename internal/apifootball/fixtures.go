@@ -68,20 +68,14 @@ func toFixtures(response *GetFixturesResponse) []Fixture {
 		fixture.Timestamp = f.Fixture.Timestamp
 		fixture.Date = f.Fixture.Date
 		fixture.Referee = f.Fixture.Referee
-		fixture.Teams = struct {
-			Home struct {
-				Id     int
-				Name   string
-				Logo   string
-				Winner bool
-			}
-			Away struct {
-				Id     int
-				Name   string
-				Logo   string
-				Winner bool
-			}
-		}(f.Teams)
+		fixture.Teams.Home.Id = f.Teams.Home.Id
+		fixture.Teams.Home.Name = f.Teams.Home.Name
+		fixture.Teams.Home.Logo = f.Teams.Home.Logo
+		fixture.Teams.Home.Winner = f.Teams.Home.Winner
+		fixture.Teams.Away.Id = f.Teams.Away.Id
+		fixture.Teams.Away.Name = f.Teams.Away.Name
+		fixture.Teams.Away.Logo = f.Teams.Away.Logo
+		fixture.Teams.Away.Winner = f.Teams.Away.Winner
 		fixture.LeagueId = f.League.Id
 		fixture.Season = f.League.Season
 		fixtures = append(fixtures, fixture)

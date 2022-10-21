@@ -224,7 +224,7 @@ func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	EnableCors(&w)
 	start := time.Now()
 
-	teams, err := dao.GetTeams()
+	teams, err := dao.GetTeams(db.GetTeamsFilter{})
 	if err != nil {
 		log.Println(err)
 	}

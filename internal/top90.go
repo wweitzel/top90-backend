@@ -17,6 +17,7 @@ type Goal struct {
 	S3ObjectKey         string
 	PresignedUrl        string
 	CreatedAt           string
+	FixtureId           int
 }
 
 type Config struct {

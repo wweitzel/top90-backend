@@ -10,6 +10,7 @@ const teamsUrl = baseUrl + "teams"
 type Team struct {
 	Id        int
 	Name      string
+	Aliases   []string
 	Code      string
 	Country   string
 	Founded   int

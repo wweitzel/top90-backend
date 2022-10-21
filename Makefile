@@ -1,8 +1,9 @@
+APP_VERSION = 0.1
+
 DB_USER     = admin
 DB_PASSWORD = admin
 DB_NAME     = redditsoccergoals
-
-VERSION = 0.1
+DB_PORT     = 5432
 
 clean:
 	rm -r bin/*
@@ -22,7 +23,7 @@ build-poller: build-poller-linux
 
 deploy-poller: build-poller-linux
 	scp -i keys/defaultec2.pem bin/goal_poller_linux ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
-	scp -i keys/defaultec2.pem .env ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
+	scp -i keys/defaultec2.pem .env.production ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.env
 
 # server commands ---------------------------------------------------------------------------------------------------------
 run-server:
@@ -30,16 +31,16 @@ run-server:
 
 build-server:
 	cd cmd/server && go build -o ../../bin/server
-	docker build -t top90-server-v${VERSION} .
+	docker build -t top90-server-v${APP_VERSION} .
 
 save-server-image:
-	docker save -o ./bin/top90-server-v${VERSION}.tar top90-server-v${VERSION}
+	docker save -o ./bin/top90-server-v${APP_VERSION}.tar top90-server-v${APP_VERSION}
 
 copy-server-image-to-ec2:
-	scp -i keys/defaultec2.pem bin/top90-server-v${VERSION}.tar ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
+	scp -i keys/defaultec2.pem bin/top90-server-v${APP_VERSION}.tar ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com:~/.
 
 deploy-server: build-server save-server-image copy-server-image-to-ec2
-	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker load --input top90-server-v${VERSION}.tar
+	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker load --input top90-server-v${APP_VERSION}.tar
 	-ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker stop top90-server
 	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker container prune -f
 	ssh -i keys/defaultec2.pem ec2-user@ec2-52-7-61-91.compute-1.amazonaws.com docker image prune -f
@@ -55,13 +56,13 @@ run-apifootball-ingest:
 
 # db migration commands ---------------------------------------------------------------------------------------------------
 migrate-up:
-	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations up
+	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?sslmode=disable" -path internal/db/migrations up
 
 migrate-down:
-	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations down
+	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?sslmode=disable" -path internal/db/migrations down
 
 migrate-rollback:
-	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -path internal/db/migrations down 1
+	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?sslmode=disable" -path internal/db/migrations down 1
 
 # tunneling / ec2 commands ------------------------------------------------------------------------------------------------
 ssh-ec2:
@@ -78,7 +79,9 @@ get-poller-logs:
 create-s3-bucket:
 	aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
 
-seed: migrate-down migrate-up create-s3-bucket run-poller
+ingest-apifootball:
 	make run-apifootball-ingest TYPE=leagues
 	make run-apifootball-ingest TYPE=teams
 	make run-apifootball-ingest TYPE=fixtures
+
+seed: migrate-down migrate-up create-s3-bucket ingest-apifootball run-poller
