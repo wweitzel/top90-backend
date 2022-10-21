@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/apifootball"
 )
@@ -20,11 +20,12 @@ type Top90DAO interface {
 	GetGoal(id string) (top90.Goal, error)
 	GetLeagues() ([]apifootball.League, error)
 	GetNewestGoal() (top90.Goal, error)
-	GetTeams() ([]apifootball.Team, error)
+	GetTeams(filter GetTeamsFilter) ([]apifootball.Team, error)
 	InsertFixture(*apifootball.Fixture) (*apifootball.Fixture, error)
 	InsertGoal(*top90.Goal) (*top90.Goal, error)
 	InsertLeague(*apifootball.League) (*apifootball.League, error)
 	InsertTeam(*apifootball.Team) (*apifootball.Team, error)
+	UpdateGoal(id string, goalUpdate top90.Goal) (updatedGoal top90.Goal, err error)
 }
 
 type PostgresDAO struct {
@@ -38,10 +39,16 @@ type Pagination struct {
 
 type GetGoalsFilter struct {
 	SearchTerm string
+	StartDate  string
 }
 
 type GetFixuresFilter struct {
 	LeagueId int
+	Date     time.Time
+}
+
+type GetTeamsFilter struct {
+	Country string
 }
 
 func NewPostgresDAO(db *sql.DB) Top90DAO {
@@ -76,9 +83,40 @@ func (dao *PostgresDAO) CountTeams() (int, error) {
 	return count, nil
 }
 
+func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any) {
+	whereClause := ""
+
+	if filter.LeagueId != 0 {
+		whereClause = whereClause + fmt.Sprintf(" %s = $1", fixtureColumns.LeagueId)
+		args = append(args, filter.LeagueId)
+	} else {
+		whereClause = whereClause + " $1"
+		args = append(args, "TRUE")
+	}
+
+	if !filter.Date.IsZero() {
+		searchStartDate := filter.Date.Add(-12 * time.Hour)
+		searchEndtDate := filter.Date.Add(12 * time.Hour)
+
+		whereClause = whereClause + fmt.Sprintf(" AND %s >= $2 and %s <= $3",
+			tableNames.Fixtures+"."+fixtureColumns.Date,
+			tableNames.Fixtures+"."+fixtureColumns.Date,
+		)
+		args = append(args, searchStartDate)
+		args = append(args, searchEndtDate)
+	}
+
+	return whereClause, args
+}
+
 func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error) {
+	var args []any
+
+	whereClause, args := getFixturesWhereClause(filter, args)
+
 	query := fmt.Sprintf(
 		`SELECT
+			%s,
 			%s,
 			%s,
 			%s,
@@ -93,12 +131,13 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 			FROM %s
 		JOIN %s home_teams ON home_teams.%s=%s
 		JOIN %s away_teams ON away_teams.%s=%s
-		WHERE %s = $1 ORDER BY %s ASC`,
+		WHERE %s ORDER BY %s ASC`,
 		tableNames.Fixtures+"."+fixtureColumns.Id,
 		tableNames.Fixtures+"."+fixtureColumns.Referee,
 		tableNames.Fixtures+"."+fixtureColumns.Date,
 		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
 		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.LeagueId,
 		tableNames.Fixtures+"."+fixtureColumns.Season,
 		tableNames.Fixtures+"."+fixtureColumns.CreatedAt,
 		tableNames.Fixtures,
@@ -108,11 +147,11 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 		tableNames.Teams,
 		teamColumns.Id,
 		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
-		fixtureColumns.LeagueId,
+		whereClause,
 		fixtureColumns.Date)
 
 	var fixtures []apifootball.Fixture
-	rows, err := dao.DB.Query(query, filter.LeagueId)
+	rows, err := dao.DB.Query(query, args...)
 	if err != nil {
 		return fixtures, err
 	}
@@ -126,6 +165,7 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 			&fixture.Date,
 			&fixture.Teams.Home.Id,
 			&fixture.Teams.Away.Id,
+			&fixture.LeagueId,
 			&fixture.Season,
 			&fixture.CreatedAt,
 			&fixture.Teams.Home.Name,
@@ -136,7 +176,6 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 			return fixtures, err
 		}
 		fixture.Timestamp = fixture.Date.Unix()
-		fixture.LeagueId = filter.LeagueId
 		fixtures = append(fixtures, fixture)
 	}
 
@@ -161,11 +200,15 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 	defer rows.Close()
 
 	for rows.Next() {
+		var fixtureId sql.NullInt64
 		var goal top90.Goal
-		err := rows.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt)
+
+		err := rows.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId)
 		if err != nil {
 			return goals, err
 		}
+
+		goal.FixtureId = int(fixtureId.Int64)
 		goals = append(goals, goal)
 	}
 
@@ -173,16 +216,19 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 }
 
 func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
-
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = $1", tableNames.Goals, goalColumns.Id)
 
 	var goal top90.Goal
 	row := dao.DB.QueryRow(query, id)
 
-	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt)
+	var fixtureId sql.NullInt64
+
+	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId)
 	if err != nil {
 		return goal, err
 	}
+
+	goal.FixtureId = int(fixtureId.Int64)
 
 	return goal, nil
 }
@@ -227,11 +273,29 @@ func (dao *PostgresDAO) GetNewestGoal() (top90.Goal, error) {
 	return newestDbGoal, nil
 }
 
-func (dao *PostgresDAO) GetTeams() ([]apifootball.Team, error) {
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY %s ASC", tableNames.Teams, teamColumns.Name)
+func getTeamsWhereClause(filter GetTeamsFilter, args []any) (string, []any) {
+	whereClause := ""
+
+	if filter.Country != "" {
+		whereClause = whereClause + fmt.Sprintf(" %s = $1", teamColumns.Country)
+		args = append(args, filter.Country)
+	} else {
+		whereClause = whereClause + " $1"
+		args = append(args, "TRUE")
+	}
+
+	return whereClause, args
+}
+
+func (dao *PostgresDAO) GetTeams(filter GetTeamsFilter) ([]apifootball.Team, error) {
+	var args []any
+
+	whereClause, args := getTeamsWhereClause(filter, args)
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s ORDER BY %s ASC", tableNames.Teams, whereClause, teamColumns.Name)
 
 	var teams []apifootball.Team
-	rows, err := dao.DB.Query(query)
+	rows, err := dao.DB.Query(query, args...)
 	if err != nil {
 		return teams, err
 	}
@@ -239,7 +303,7 @@ func (dao *PostgresDAO) GetTeams() ([]apifootball.Team, error) {
 
 	for rows.Next() {
 		var team apifootball.Team
-		err := rows.Scan(&team.Id, &team.Name, &team.Code, &team.Country, &team.Founded, &team.National, &team.Logo, &team.CreatedAt)
+		err := rows.Scan(&team.Id, &team.Name, &team.Code, &team.Country, &team.Founded, &team.National, &team.Logo, &team.CreatedAt, pq.Array(&team.Aliases))
 		if err != nil {
 			return teams, err
 		}
@@ -272,20 +336,27 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 	id := uuid.NewString()
 	id = strings.Replace(id, "-", "", -1)
 
-	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (%s) DO NOTHING RETURNING *",
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
 		tableNames.Goals,
-		goalColumns.Id, goalColumns.RedditFullname, goalColumns.RedditLinkUrl, goalColumns.RedditPostTitle, goalColumns.RedditPostCreatedAt, goalColumns.S3ObjectKey,
+		goalColumns.Id, goalColumns.RedditFullname, goalColumns.RedditLinkUrl, goalColumns.RedditPostTitle, goalColumns.RedditPostCreatedAt, goalColumns.S3ObjectKey, goalColumns.FixtureId,
 		goalColumns.RedditFullname,
 	)
 
+	fixtureId := sql.NullInt64{
+		Int64: int64(goal.FixtureId),
+		Valid: goal.FixtureId != 0,
+	}
+
 	row := dao.DB.QueryRow(
-		query, id, goal.RedditFullname, goal.RedditLinkUrl, goal.RedditPostTitle, goal.RedditPostCreatedAt, goal.S3ObjectKey,
+		query, id, goal.RedditFullname, goal.RedditLinkUrl, goal.RedditPostTitle, goal.RedditPostCreatedAt, goal.S3ObjectKey, fixtureId,
 	)
 
-	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt)
+	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId)
 	if err != nil {
 		return goal, err
 	}
+
+	goal.FixtureId = int(fixtureId.Int64)
 
 	return goal, nil
 }
@@ -320,10 +391,43 @@ func (dao *PostgresDAO) InsertTeam(team *apifootball.Team) (*apifootball.Team, e
 		query, team.Id, team.Name, team.Code, team.Country, team.Founded, team.National, team.Logo,
 	)
 
-	err := row.Scan(&team.Id, &team.Name, &team.Code, &team.Country, &team.Founded, &team.National, &team.Logo, &team.CreatedAt)
+	err := row.Scan(&team.Id, &team.Name, &team.Code, &team.Country, &team.Founded, &team.National, &team.Logo, &team.CreatedAt, pq.Array(&team.Aliases))
 	if err != nil {
 		return team, err
 	}
 
 	return team, nil
+}
+
+// UpdateGoal updates the goal with primary key = id.
+// The function will update any fields that are set on goalUpdate.
+// This means you should only set fields on goalUpdate that you actually
+// want to be updated.
+func (dao *PostgresDAO) UpdateGoal(id string, goalUpdate top90.Goal) (top90.Goal, error) {
+	var args []any
+
+	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Goals)
+
+	if goalUpdate.FixtureId != 0 {
+		query = query + fmt.Sprintf("%s = $1", goalColumns.FixtureId)
+		args = append(args, goalUpdate.FixtureId)
+	}
+
+	query = query + fmt.Sprintf(" WHERE %s = $2", goalColumns.Id)
+	args = append(args, id)
+
+	query = query + " RETURNING *"
+
+	row := dao.DB.QueryRow(query, args...)
+
+	var fixtureId sql.NullInt64
+	var updatedGoal top90.Goal
+
+	err := row.Scan(&updatedGoal.Id, &updatedGoal.RedditFullname, &updatedGoal.RedditLinkUrl, &updatedGoal.RedditPostTitle, &updatedGoal.RedditPostCreatedAt, &updatedGoal.S3ObjectKey, &updatedGoal.CreatedAt, &fixtureId)
+	if err != nil {
+		return updatedGoal, err
+	}
+
+	updatedGoal.FixtureId = int(fixtureId.Int64)
+	return updatedGoal, nil
 }

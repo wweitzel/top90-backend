@@ -15,6 +15,7 @@ type GoalColumns struct {
 	RedditPostCreatedAt string
 	S3ObjectKey         string
 	CreatedAt           string
+	FixtureId           string
 }
 
 type LeagueColumns struct {
@@ -60,6 +61,7 @@ var goalColumns = GoalColumns{
 	RedditPostCreatedAt: "reddit_post_created_at",
 	S3ObjectKey:         "s3_object_key",
 	CreatedAt:           "created_at",
+	FixtureId:           "fixture_id",
 }
 
 var leagueColumns = LeagueColumns{

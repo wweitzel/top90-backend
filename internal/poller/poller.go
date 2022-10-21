@@ -151,12 +151,28 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	redditFullName := post.Kind + "_" + post.Data.Id
 	createdAt := convertRedditCreatedAtToTime(post)
 
-	err := poller.insertAndUpload(top90.Goal{
+	goal := top90.Goal{
 		RedditFullname:      redditFullName,
 		RedditPostCreatedAt: createdAt,
 		RedditPostTitle:     post.Data.Title,
 		RedditLinkUrl:       post.Data.URL,
-	}, file)
+	}
+
+	firstTeamNameFromPost, _ := GetTeamName(post.Data.Title)
+	team, err := GetPremierLeagueTeam(poller, firstTeamNameFromPost)
+
+	// If the team is a premier league team, try to link the fixture
+	if err == nil {
+		fixtures, _ := poller.Dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
+		fixture, err := GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
+		if err != nil || fixture.LeagueId != 39 {
+			log.Println("warning:", "no premier league fixture for", team.Name, "on date", goal.RedditPostCreatedAt)
+		} else {
+			goal.FixtureId = fixture.Id
+		}
+	}
+
+	err = poller.insertAndUpload(goal, file)
 	if err == sql.ErrNoRows {
 		log.Printf("Already stored goal for fullname %s", redditFullName)
 	} else if err != nil {
