@@ -21,6 +21,7 @@ type Top90DAO interface {
 	GetLeagues() ([]apifootball.League, error)
 	GetNewestGoal() (top90.Goal, error)
 	GetTeams(filter GetTeamsFilter) ([]apifootball.Team, error)
+	GetTeamsForLeagueAndSeason(leagueId, season int) ([]apifootball.Team, error)
 	InsertFixture(*apifootball.Fixture) (*apifootball.Fixture, error)
 	InsertGoal(*top90.Goal) (*top90.Goal, error)
 	InsertLeague(*apifootball.League) (*apifootball.League, error)
@@ -40,6 +41,9 @@ type Pagination struct {
 type GetGoalsFilter struct {
 	SearchTerm string
 	StartDate  string
+	LeagueId   int
+	Season     int
+	TeamId     int
 }
 
 type GetFixuresFilter struct {
@@ -60,10 +64,14 @@ func NewPostgresDAO(db *sql.DB) Top90DAO {
 func (dao *PostgresDAO) CountGoals(filter GetGoalsFilter) (int, error) {
 	filter.SearchTerm = "%" + filter.SearchTerm + "%"
 
-	query := fmt.Sprintf("SELECT count(*) FROM %s WHERE reddit_post_title ILIKE $1", tableNames.Goals)
+	query := fmt.Sprintf("SELECT count(*) FROM %s", tableNames.Goals)
+
+	var variableCount int
+	var args []any
+	query, args = addGetGoalsJoinAndWhere(query, args, filter, &variableCount)
 
 	var count int
-	err := dao.DB.QueryRow(query, filter.SearchTerm).Scan(&count)
+	err := dao.DB.QueryRow(query, args...).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -81,32 +89,6 @@ func (dao *PostgresDAO) CountTeams() (int, error) {
 	}
 
 	return count, nil
-}
-
-func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any) {
-	whereClause := ""
-
-	if filter.LeagueId != 0 {
-		whereClause = whereClause + fmt.Sprintf(" %s = $1", fixtureColumns.LeagueId)
-		args = append(args, filter.LeagueId)
-	} else {
-		whereClause = whereClause + " $1"
-		args = append(args, "TRUE")
-	}
-
-	if !filter.Date.IsZero() {
-		searchStartDate := filter.Date.Add(-12 * time.Hour)
-		searchEndtDate := filter.Date.Add(12 * time.Hour)
-
-		whereClause = whereClause + fmt.Sprintf(" AND %s >= $2 and %s <= $3",
-			tableNames.Fixtures+"."+fixtureColumns.Date,
-			tableNames.Fixtures+"."+fixtureColumns.Date,
-		)
-		args = append(args, searchStartDate)
-		args = append(args, searchEndtDate)
-	}
-
-	return whereClause, args
 }
 
 func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error) {
@@ -189,11 +171,19 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 		pagination.Limit = 10
 	}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE reddit_post_title ILIKE $1 ORDER BY %s DESC OFFSET $2 LIMIT $3",
-		tableNames.Goals, goalColumns.RedditPostCreatedAt)
+	query := fmt.Sprintf("SELECT %s.* FROM %s", tableNames.Goals, tableNames.Goals)
+
+	var variableCount int
+	var args []any
+	query, args = addGetGoalsJoinAndWhere(query, args, filter, &variableCount)
+
+	variableCount++
+	query = query + fmt.Sprintf(" ORDER BY %s.%s DESC OFFSET $%d LIMIT $%d", tableNames.Goals, goalColumns.RedditPostCreatedAt, variableCount, variableCount+1)
+	args = append(args, pagination.Skip)
+	args = append(args, pagination.Limit)
 
 	var goals []top90.Goal
-	rows, err := dao.DB.Query(query, filter.SearchTerm, pagination.Skip, pagination.Limit)
+	rows, err := dao.DB.Query(query, args...)
 	if err != nil {
 		return goals, err
 	}
@@ -273,26 +263,70 @@ func (dao *PostgresDAO) GetNewestGoal() (top90.Goal, error) {
 	return newestDbGoal, nil
 }
 
-func getTeamsWhereClause(filter GetTeamsFilter, args []any) (string, []any) {
-	whereClause := ""
-
-	if filter.Country != "" {
-		whereClause = whereClause + fmt.Sprintf(" %s = $1", teamColumns.Country)
-		args = append(args, filter.Country)
-	} else {
-		whereClause = whereClause + " $1"
-		args = append(args, "TRUE")
-	}
-
-	return whereClause, args
-}
-
 func (dao *PostgresDAO) GetTeams(filter GetTeamsFilter) ([]apifootball.Team, error) {
 	var args []any
 
 	whereClause, args := getTeamsWhereClause(filter, args)
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s ORDER BY %s ASC", tableNames.Teams, whereClause, teamColumns.Name)
+
+	var teams []apifootball.Team
+	rows, err := dao.DB.Query(query, args...)
+	if err != nil {
+		return teams, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var team apifootball.Team
+		err := rows.Scan(&team.Id, &team.Name, &team.Code, &team.Country, &team.Founded, &team.National, &team.Logo, &team.CreatedAt, pq.Array(&team.Aliases))
+		if err != nil {
+			return teams, err
+		}
+		teams = append(teams, team)
+	}
+
+	return teams, nil
+}
+
+func (dao *PostgresDAO) GetTeamsForLeagueAndSeason(leagueId, season int) ([]apifootball.Team, error) {
+	var args []any
+
+	// Union of home teams ids and away team ids for a given league season
+	query := fmt.Sprintf("SELECT * from %s WHERE %s in (", tableNames.Teams, teamColumns.Id)
+
+	// Teams for league id and season
+	if leagueId != 0 && season != 0 {
+		query = query + fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1 AND %s = $2", fixtureColumns.HomeTeamId, tableNames.Fixtures, fixtureColumns.LeagueId, fixtureColumns.Season)
+		query = query + " UNION "
+		query = query + fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1 AND %s = $2", fixtureColumns.AwayTeamId, tableNames.Fixtures, fixtureColumns.LeagueId, fixtureColumns.Season)
+		args = append(args, leagueId, season)
+	}
+
+	// Teams for league id
+	if leagueId != 0 && season == 0 {
+		query = query + fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", fixtureColumns.HomeTeamId, tableNames.Fixtures, fixtureColumns.LeagueId)
+		query = query + " UNION "
+		query = query + fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", fixtureColumns.AwayTeamId, tableNames.Fixtures, fixtureColumns.LeagueId)
+		args = append(args, leagueId)
+	}
+
+	// Teams for season
+	if leagueId == 0 && season != 0 {
+		query = query + fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", fixtureColumns.HomeTeamId, tableNames.Fixtures, fixtureColumns.Season)
+		query = query + " UNION "
+		query = query + fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", fixtureColumns.AwayTeamId, tableNames.Fixtures, fixtureColumns.Season)
+		args = append(args, season)
+	}
+
+	// All teams
+	if leagueId == 0 && season == 0 {
+		query = query + fmt.Sprintf("SELECT %s FROM %s", fixtureColumns.HomeTeamId, tableNames.Fixtures)
+		query = query + " UNION "
+		query = query + fmt.Sprintf("SELECT %s FROM %s", fixtureColumns.AwayTeamId, tableNames.Fixtures)
+	}
+
+	query = query + (")")
 
 	var teams []apifootball.Team
 	rows, err := dao.DB.Query(query, args...)
