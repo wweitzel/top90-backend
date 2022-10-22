@@ -113,7 +113,11 @@ func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	search := queryParams.Get("search")
-	filter := db.GetGoalsFilter{SearchTerm: search}
+	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
+	season, _ := strconv.Atoi(queryParams.Get("season"))
+	teamId, _ := strconv.Atoi(queryParams.Get("teamId"))
+
+	filter := db.GetGoalsFilter{SearchTerm: search, LeagueId: leagueId, Season: season, TeamId: teamId}
 	count, err := dao.CountGoals(filter)
 	if err != nil {
 		log.Println(err)
@@ -224,7 +228,13 @@ func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	EnableCors(&w)
 	start := time.Now()
 
-	teams, err := dao.GetTeams(db.GetTeamsFilter{})
+	queryParams := r.URL.Query()
+	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
+	season, _ := strconv.Atoi(queryParams.Get("season"))
+
+	var teams []apifootball.Team
+	var err error
+	teams, err = dao.GetTeamsForLeagueAndSeason(leagueId, season)
 	if err != nil {
 		log.Println(err)
 	}
