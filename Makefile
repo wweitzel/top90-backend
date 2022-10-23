@@ -84,4 +84,8 @@ ingest-apifootball:
 	make run-apifootball-ingest TYPE=teams
 	make run-apifootball-ingest TYPE=fixtures
 
-seed: migrate-down migrate-up create-s3-bucket ingest-apifootball run-poller
+clear-tmp:
+	rm -rf tmp
+	mkdir tmp
+
+seed: clear-tmp migrate-down migrate-up create-s3-bucket ingest-apifootball run-poller
