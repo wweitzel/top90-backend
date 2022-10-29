@@ -191,7 +191,7 @@ func (poller *GoalPoller) insertAndUpload(goal top90.Goal, file *os.File) error 
 	}
 	log.Println("Successfully saved goal in db", createdGoal.Id, goal.RedditFullname)
 
-	err = poller.S3Client.UploadFile(file, key, "video/mp4", poller.BucketName)
+	err = poller.S3Client.UploadFile(file.Name(), key, "video/mp4", poller.BucketName)
 	if err != nil {
 		log.Println("s3 upload failed", err)
 	} else {

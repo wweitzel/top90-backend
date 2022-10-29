@@ -191,14 +191,16 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 
 	for rows.Next() {
 		var fixtureId sql.NullInt64
+		var thumbnailS3Key sql.NullString
 		var goal top90.Goal
 
-		err := rows.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId)
+		err := rows.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId, &thumbnailS3Key)
 		if err != nil {
 			return goals, err
 		}
 
 		goal.FixtureId = int(fixtureId.Int64)
+		goal.ThumbnailS3Key = thumbnailS3Key.String
 		goals = append(goals, goal)
 	}
 
@@ -212,13 +214,15 @@ func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
 	row := dao.DB.QueryRow(query, id)
 
 	var fixtureId sql.NullInt64
+	var thumbnailS3Key sql.NullString
 
-	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId)
+	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId, &thumbnailS3Key)
 	if err != nil {
 		return goal, err
 	}
 
 	goal.FixtureId = int(fixtureId.Int64)
+	goal.ThumbnailS3Key = thumbnailS3Key.String
 
 	return goal, nil
 }
@@ -442,12 +446,26 @@ func (dao *PostgresDAO) UpdateGoal(id string, goalUpdate top90.Goal) (top90.Goal
 
 	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Goals)
 
+	variableCount := 0
+
 	if goalUpdate.FixtureId != 0 {
-		query = query + fmt.Sprintf("%s = $1", goalColumns.FixtureId)
+		variableCount += 1
+		query = query + fmt.Sprintf("%s = $%d", goalColumns.FixtureId, variableCount)
 		args = append(args, goalUpdate.FixtureId)
 	}
 
-	query = query + fmt.Sprintf(" WHERE %s = $2", goalColumns.Id)
+	if goalUpdate.ThumbnailS3Key != "" {
+		variableCount += 1
+		if variableCount == 1 {
+			query = query + fmt.Sprintf("%s = $%d", goalColumns.ThumbnailS3Key, variableCount)
+		} else {
+			query = query + fmt.Sprintf(", %s = $%d", goalColumns.ThumbnailS3Key, variableCount)
+		}
+		args = append(args, goalUpdate.ThumbnailS3Key)
+	}
+
+	variableCount += 1
+	query = query + fmt.Sprintf(" WHERE %s = $%d", goalColumns.Id, variableCount)
 	args = append(args, id)
 
 	query = query + " RETURNING *"
@@ -455,13 +473,15 @@ func (dao *PostgresDAO) UpdateGoal(id string, goalUpdate top90.Goal) (top90.Goal
 	row := dao.DB.QueryRow(query, args...)
 
 	var fixtureId sql.NullInt64
+	var thumbanilS3Key sql.NullString
 	var updatedGoal top90.Goal
 
-	err := row.Scan(&updatedGoal.Id, &updatedGoal.RedditFullname, &updatedGoal.RedditLinkUrl, &updatedGoal.RedditPostTitle, &updatedGoal.RedditPostCreatedAt, &updatedGoal.S3ObjectKey, &updatedGoal.CreatedAt, &fixtureId)
+	err := row.Scan(&updatedGoal.Id, &updatedGoal.RedditFullname, &updatedGoal.RedditLinkUrl, &updatedGoal.RedditPostTitle, &updatedGoal.RedditPostCreatedAt, &updatedGoal.S3ObjectKey, &updatedGoal.CreatedAt, &fixtureId, &thumbanilS3Key)
 	if err != nil {
 		return updatedGoal, err
 	}
 
 	updatedGoal.FixtureId = int(fixtureId.Int64)
+	updatedGoal.ThumbnailS3Key = thumbanilS3Key.String
 	return updatedGoal, nil
 }

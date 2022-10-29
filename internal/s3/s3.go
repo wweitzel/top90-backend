@@ -40,6 +40,7 @@ func NewClient(awsAccessKey, awsSecretAccessKey string) S3Client {
 }
 
 func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {
+	// TODO: Should pass in a config to NewClient insttead of doing this here
 	if os.Getenv("ENV") == "dev" {
 		return &aws.Config{
 			Region:           aws.String("us-east-1"),
@@ -76,10 +77,10 @@ func (client *S3Client) VerifyConnection(bucketName string) error {
 }
 
 // Upload a file to s3
-func (client *S3Client) UploadFile(file *os.File, key string, contentType string, bucketName string) error {
+func (client *S3Client) UploadFile(fileName string, key string, contentType string, bucketName string) error {
 	uploader := s3manager.NewUploader(client.session)
 
-	fileBytes, err := ioutil.ReadFile(file.Name())
+	fileBytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,6 +108,7 @@ func (client *S3Client) DownloadFile(key, bucket, outputFilename string) {
 	if err != nil {
 		log.Println("Unable to open file", outputFilename, err)
 	}
+	defer file.Close()
 
 	numBytes, err := downloader.Download(file,
 		&s3.GetObjectInput{
@@ -119,6 +121,24 @@ func (client *S3Client) DownloadFile(key, bucket, outputFilename string) {
 	}
 
 	log.Println("Downloaded", file.Name(), numBytes, "bytes")
+}
+
+func (client *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, error) {
+	downloader := s3manager.NewDownloader(client.session)
+
+	buf := aws.NewWriteAtBuffer([]byte{})
+	numBytes, err := downloader.Download(buf, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		log.Println("Unable to download item", key, err)
+		return nil, err
+	}
+
+	log.Println("Downloaded", key, numBytes, "bytes")
+	return buf.Bytes(), nil
 }
 
 // Delete a file on s3
