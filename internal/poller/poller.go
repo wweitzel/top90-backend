@@ -136,15 +136,31 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	}
 
 	// Download the video
-	var file *os.File
+	var videoFile *os.File
 	if strings.HasSuffix(sourceUrl, ".m3u8") {
-		file = downloadBlob("https://juststream.live/", sourceUrl)
+		videoFile = downloadBlob("https://juststream.live/", sourceUrl)
 	} else {
-		file = downloadVideo(sourceUrl)
+		videoFile = downloadVideo(sourceUrl)
 	}
-	defer os.Remove(file.Name())
+	defer videoFile.Close()
+	defer os.Remove(videoFile.Name())
 
-	log.Println(file.Name(), '\n')
+	// Extract the thumbnail
+	randomId := uuid.NewString()
+	randomId = strings.Replace(randomId, "-", "", -1)
+	thumbnailFilename := fmt.Sprintf("tmp/%s.png", randomId)
+	defer os.Remove(thumbnailFilename)
+
+	cmd := exec.Command("/usr/local/bin/ffmpeg", "-i", videoFile.Name(), "-vframes", "1", thumbnailFilename)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Println("warning: error generating thumbnail with ffpmeg", err)
+	}
+
+	log.Println(videoFile.Name(), '\n')
 	// TDOO: Handle empty file (download didn't work)
 
 	// Insert goal into db and upload the mp4 file to s3
@@ -172,7 +188,7 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 		}
 	}
 
-	err = poller.insertAndUpload(goal, file)
+	err = poller.insertAndUpload(goal, videoFile.Name(), thumbnailFilename)
 	if err == sql.ErrNoRows {
 		log.Printf("Already stored goal for fullname %s", redditFullName)
 	} else if err != nil {
@@ -180,9 +196,12 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	}
 }
 
-func (poller *GoalPoller) insertAndUpload(goal top90.Goal, file *os.File) error {
-	key := createKey()
-	goal.S3ObjectKey = key
+func (poller *GoalPoller) insertAndUpload(goal top90.Goal, videoFilename string, thumbnailFilename string) error {
+	videoKey := createKey("mp4")
+	goal.S3ObjectKey = videoKey
+
+	thumbnailKey := createKey("png")
+	goal.ThumbnailS3Key = thumbnailKey
 
 	log.Println("inserting goal...", goal.RedditFullname)
 	createdGoal, err := poller.Dao.InsertGoal(&goal)
@@ -191,11 +210,18 @@ func (poller *GoalPoller) insertAndUpload(goal top90.Goal, file *os.File) error 
 	}
 	log.Println("Successfully saved goal in db", createdGoal.Id, goal.RedditFullname)
 
-	err = poller.S3Client.UploadFile(file.Name(), key, "video/mp4", poller.BucketName)
+	err = poller.S3Client.UploadFile(videoFilename, videoKey, "video/mp4", poller.BucketName)
 	if err != nil {
-		log.Println("s3 upload failed", err)
+		log.Println("s3 video upload failed", err)
 	} else {
-		log.Println("Successfully uploaded video to s3", key)
+		log.Println("Successfully uploaded video to s3", videoKey)
+	}
+
+	err = poller.S3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/png", poller.BucketName)
+	if err != nil {
+		log.Println("s3 thumbanil upload failed", err)
+	} else {
+		log.Println("Successfully uploaded thumbnail to s3", thumbnailKey)
 	}
 
 	return nil
@@ -235,14 +261,14 @@ func convertRedditCreatedAtToTime(post reddit.RedditPost) time.Time {
 	return postCreatedAt
 }
 
-func createKey() string {
+func createKey(fileExtension string) string {
 	nowUtc := time.Now().UTC()
 	yearMonthDayStr := fmt.Sprintf("%d-%02d-%02d",
 		nowUtc.Year(), nowUtc.Month(), nowUtc.Day())
 
 	id := uuid.NewString()
 	id = strings.Replace(id, "-", "", -1)
-	objectKey := yearMonthDayStr + "/" + id + ".mp4"
+	objectKey := yearMonthDayStr + "/" + id + "." + fileExtension
 	return objectKey
 }
 
