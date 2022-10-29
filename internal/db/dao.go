@@ -374,9 +374,9 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 	id := uuid.NewString()
 	id = strings.Replace(id, "-", "", -1)
 
-	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (%s) DO NOTHING RETURNING *",
 		tableNames.Goals,
-		goalColumns.Id, goalColumns.RedditFullname, goalColumns.RedditLinkUrl, goalColumns.RedditPostTitle, goalColumns.RedditPostCreatedAt, goalColumns.S3ObjectKey, goalColumns.FixtureId,
+		goalColumns.Id, goalColumns.RedditFullname, goalColumns.RedditLinkUrl, goalColumns.RedditPostTitle, goalColumns.RedditPostCreatedAt, goalColumns.S3ObjectKey, goalColumns.FixtureId, goalColumns.ThumbnailS3Key,
 		goalColumns.RedditFullname,
 	)
 
@@ -385,11 +385,16 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 		Valid: goal.FixtureId != 0,
 	}
 
+	thumbnailS3Key := sql.NullString{
+		String: goal.ThumbnailS3Key,
+		Valid:  goal.ThumbnailS3Key != "",
+	}
+
 	row := dao.DB.QueryRow(
-		query, id, goal.RedditFullname, goal.RedditLinkUrl, goal.RedditPostTitle, goal.RedditPostCreatedAt, goal.S3ObjectKey, fixtureId,
+		query, id, goal.RedditFullname, goal.RedditLinkUrl, goal.RedditPostTitle, goal.RedditPostCreatedAt, goal.S3ObjectKey, fixtureId, thumbnailS3Key,
 	)
 
-	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId)
+	err := row.Scan(&goal.Id, &goal.RedditFullname, &goal.RedditLinkUrl, &goal.RedditPostTitle, &goal.RedditPostCreatedAt, &goal.S3ObjectKey, &goal.CreatedAt, &fixtureId, &thumbnailS3Key)
 	if err != nil {
 		return goal, err
 	}

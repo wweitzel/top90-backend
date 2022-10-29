@@ -64,7 +64,11 @@ func main() {
 		}
 		wg.Add(1)
 		go func(goal top90.Goal, wg *sync.WaitGroup, i int) {
-			err := extractThumbnail(goal, &s3Client, "reddit-soccer-goals", fmt.Sprintf("tmp/vid#%d.mp4", i), i)
+			var err error
+
+			if goal.ThumbnailS3Key == "" {
+				err = extractThumbnail(goal, &s3Client, "reddit-soccer-goals", fmt.Sprintf("tmp/vid#%d.mp4", i), i)
+			}
 
 			// var err error
 			// if goal.ThumbnailS3Key != "" {

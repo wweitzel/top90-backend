@@ -174,11 +174,18 @@ func GetGoalHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	url, err := s3Client.NewSignedGetURL(goal.S3ObjectKey, config.AwsBucketName, time.Minute*1)
+	// TODO: This is nearly duplicated with the code in getGoals
+	videoUrl, err := s3Client.NewSignedGetURL(goal.S3ObjectKey, config.AwsBucketName, time.Minute*1)
 	if err != nil {
 		log.Println(err)
 	}
-	goal.PresignedUrl = url
+	thumbnailUrl, err := s3Client.NewSignedGetURL(goal.ThumbnailS3Key, config.AwsBucketName, time.Minute*10)
+	if err != nil {
+		log.Println(err)
+	}
+
+	goal.PresignedUrl = videoUrl
+	goal.ThumbnailPresignedUrl = thumbnailUrl
 
 	getGoalResponse := GetGoalResponse{
 		Goal: goal,
