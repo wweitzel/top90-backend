@@ -1,0 +1,1 @@
+ALTER TABLE goals ADD COLUMN thumbnail_s3_key VARCHAR;

@@ -16,6 +16,7 @@ type GoalColumns struct {
 	S3ObjectKey         string
 	CreatedAt           string
 	FixtureId           string
+	ThumbnailS3Key      string
 }
 
 type LeagueColumns struct {
@@ -62,6 +63,7 @@ var goalColumns = GoalColumns{
 	S3ObjectKey:         "s3_object_key",
 	CreatedAt:           "created_at",
 	FixtureId:           "fixture_id",
+	ThumbnailS3Key:      "thumbnail_s3_key",
 }
 
 var leagueColumns = LeagueColumns{
