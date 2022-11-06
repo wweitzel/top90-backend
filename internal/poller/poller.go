@@ -177,12 +177,12 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	firstTeamNameFromPost, _ := GetTeamName(post.Data.Title)
 
 	teams, err1 := poller.Dao.GetTeams(db.GetTeamsFilter{})
-	if err != nil {
+	if err1 != nil {
 		log.Println("error: could not get teams from db")
 	}
 
 	team, err2 := GetTeamForTeamName(firstTeamNameFromPost, teams)
-	if err != nil {
+	if err2 != nil {
 		log.Printf("team name %s could not be found in db", firstTeamNameFromPost)
 	}
 
