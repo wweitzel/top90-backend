@@ -175,14 +175,32 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	}
 
 	firstTeamNameFromPost, _ := GetTeamName(post.Data.Title)
-	team, err := GetPremierLeagueTeam(poller, firstTeamNameFromPost)
 
-	// If the team is a premier league team, try to link the fixture
-	if err == nil {
+	teams, err1 := poller.Dao.GetTeams(db.GetTeamsFilter{})
+	if err != nil {
+		log.Println("error: could not get teams from db")
+	}
+
+	team, err2 := GetTeamForTeamName(firstTeamNameFromPost, teams)
+	if err != nil {
+		log.Printf("team name %s could not be found in db", firstTeamNameFromPost)
+	}
+
+	// Try to link the fixture
+	if err1 == nil && err2 == nil {
 		fixtures, _ := poller.Dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
 		fixture, err := GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
-		if err != nil || fixture.LeagueId != 39 {
-			log.Println("warning:", "no premier league fixture for", team.Name, "on date", goal.RedditPostCreatedAt)
+
+		premierLeagueId := 39
+		championsLeagueId := 2
+		friendliesLeagueId := 10
+		worldCupLeagueId := 1
+
+		if err != nil || (fixture.LeagueId != premierLeagueId &&
+			fixture.LeagueId != championsLeagueId &&
+			fixture.LeagueId != friendliesLeagueId &&
+			fixture.LeagueId != worldCupLeagueId) {
+			log.Println("warning:", "no premier, champions, friendlies, worldcup league fixture for", team.Name, "on date", goal.RedditPostCreatedAt)
 		} else {
 			goal.FixtureId = fixture.Id
 		}
