@@ -119,14 +119,5 @@ $ docker run -p 7171:7171 -d --restart unless-stopped top90-server-v0
 
 #### Renew cert
 ```
-$ docker-compose run --rm certbot renew
+$ docker-compose run --rm certbot renew && docker-compose restart
 ```
-
-fixtures
-id
-referee
-date
-home_team_id
-away_team_id
-league_id
-season

@@ -15,6 +15,16 @@ var LEAGUES_TO_INGEST = []leagueCountryAndName{
 	{Country: "World", Name: "UEFA Champions League"},
 	{Country: "World", Name: "UEFA Europa League"},
 	{Country: "World", Name: "World Cup"},
+	// TODO: Leaving these uncommented causes too many requests error with the seed.
+	// Need to update the seed to not have to hit apifootball api
+	// {Country: "World", Name: "World Cup - Qualification Intercontinental Play-offs"},
+	// {Country: "World", Name: "World Cup - Qualification CONCACAF"},
+	// {Country: "World", Name: "World Cup - Qualification Europe"},
+	// {Country: "World", Name: "World Cup - Qualification Oceania"},
+	// {Country: "World", Name: "World Cup - Qualification South America"},
+	// {Country: "World", Name: "World Cup - Qualification Africa"},
+	// {Country: "World", Name: "World Cup - Qualification Asia"},
+	// {Country: "World", Name: "Friendlies"},
 }
 
 type leagueCountryAndName struct {

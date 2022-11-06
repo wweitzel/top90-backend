@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/wweitzel/top90/internal/apifootball"
-	"github.com/wweitzel/top90/internal/db"
 )
 
 func GetTeamName(redditPostTitle string) (string, error) {
@@ -63,19 +62,6 @@ func GetTeamName(redditPostTitle string) (string, error) {
 
 	teamName := strings.TrimSpace(redditPostTitle[:lowestIndex])
 	return teamName, nil
-}
-
-func GetPremierLeagueTeam(poller *GoalPoller, teamName string) (apifootball.Team, error) {
-	premierLeagueTeams, getPremierLeagueTeamsErr := poller.Dao.GetTeams(
-		db.GetTeamsFilter{Country: "England"},
-	)
-	team, getTeamForTeamNameErr := GetTeamForTeamName(teamName, premierLeagueTeams)
-
-	if getPremierLeagueTeamsErr == nil && getTeamForTeamNameErr == nil {
-		return team, nil
-	} else {
-		return apifootball.Team{}, errors.New("team name was not a premier league team")
-	}
 }
 
 func GetTeamForTeamName(teamName string, teams []apifootball.Team) (apifootball.Team, error) {
