@@ -271,3 +271,46 @@ func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(json)
 	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
+
+func MessagePreviewHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	start := time.Now()
+
+	id := mux.Vars(r)["id"]
+	goal, _ := dao.GetGoal(id)
+
+	// TODO: This is nearly duplicated with the code in getGoals and getGoal
+	videoUrl, err := s3Client.NewSignedGetURL(goal.S3ObjectKey, config.AwsBucketName, time.Hour*24*7)
+	if err != nil {
+		log.Println(err)
+	}
+	thumbnailUrl, err := s3Client.NewSignedGetURL(goal.ThumbnailS3Key, config.AwsBucketName, time.Hour*24*7)
+	if err != nil {
+		log.Println(err)
+	}
+
+	goal.PresignedUrl = videoUrl
+	goal.ThumbnailPresignedUrl = thumbnailUrl
+
+	html :=
+		`<!doctype html>` +
+			`<html lang="en">` +
+			`<head>` +
+			` <meta charset="utf-8">` +
+			// TODO: If possible, better to return the video and image data directly (in base64)
+			// rather than returning the presigned url since we don't really want these to expire.
+			// Max expiry date for presigned url is apparently one week.
+			`	<meta property="og:title" content="` + goal.RedditPostTitle + `"` + `>` +
+			`	<meta property="og:image" content="` + goal.ThumbnailPresignedUrl + `"` + `>` +
+			`	<meta property="og:video" content="` + goal.PresignedUrl + `"` + `>` +
+			` <meta http-equiv="refresh" content="0; url='https://top90.io/goals/` + goal.Id + `'" />` +
+			` <title>top90.io</title>` +
+			`</head>` +
+			`<body>` +
+			`</body>` +
+			`</html>`
+
+	w.Header().Add("Content-Type", "text/html")
+	w.Write([]byte(html))
+	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
+}
