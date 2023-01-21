@@ -151,7 +151,8 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	thumbnailFilename := fmt.Sprintf("tmp/%s.png", randomId)
 	defer os.Remove(thumbnailFilename)
 
-	cmd := exec.Command("/usr/local/bin/ffmpeg", "-i", videoFile.Name(), "-vframes", "1", thumbnailFilename)
+	ffmpegPath := os.Getenv("TOP90_FFMPEG_PATH")
+	cmd := exec.Command(ffmpegPath, "-i", videoFile.Name(), "-vframes", "1", thumbnailFilename)
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
 
@@ -296,8 +297,10 @@ func downloadBlob(referrer string, url string) *os.File {
 		log.Fatalln(err)
 	}
 
+	ffmpegPath := os.Getenv("TOP90_FFMPEG_PATH")
+
 	cmd := exec.Command(
-		"/usr/local/bin/ffmpeg",
+		ffmpegPath,
 		"-headers", "Referer: "+referrer,
 		"-i", url,
 		"-y",

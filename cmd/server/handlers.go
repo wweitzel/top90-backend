@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -138,14 +136,6 @@ func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 		thumbnailUrl, err := s3Client.NewSignedGetURL(goals[i].ThumbnailS3Key, config.AwsBucketName, time.Minute*10)
 		if err != nil {
 			log.Println(err)
-		}
-
-		// This is for developing locally and checking on a real mobile device.
-		// THe mobile device has to connect to the backend through the local machine's
-		// ip address since localhost would not work.
-		if os.Getenv("ENV") == "dev" {
-			thumbnailUrl = strings.Replace(thumbnailUrl, "localhost", "192.168.0.218", 1)
-			videoUrl = strings.Replace(videoUrl, "localhost", "192.168.0.218", 1)
 		}
 
 		goals[i].PresignedUrl = videoUrl

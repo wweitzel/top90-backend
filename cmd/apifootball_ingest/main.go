@@ -6,8 +6,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Ltime)
-
 	args := os.Args[1:]
 
 	if len(args) < 1 {

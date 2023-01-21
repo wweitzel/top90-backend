@@ -18,8 +18,6 @@ var s3Client s3.S3Client
 var config top90.Config
 
 func main() {
-	log.SetFlags(log.Ltime)
-
 	// Load config from .env into environment variables
 	config = top90.LoadConfig()
 
