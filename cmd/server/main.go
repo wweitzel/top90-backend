@@ -45,6 +45,7 @@ func main() {
 	r.HandleFunc("/goals_crawl", GetGoalsCrawlHandler)
 	r.HandleFunc("/leagues", GetLeaguesHandler)
 	r.HandleFunc("/teams", GetTeamsHandler)
+	r.HandleFunc("/message_preview/{id}", MessagePreviewHandler)
 	http.Handle("/", r)
 
 	// Start the server
