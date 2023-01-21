@@ -21,6 +21,7 @@ $ brew install go
 $ brew install --cask docker
 $ brew install awscli
 $ brew install golang-migrate
+$ brew install ffmpeg
 ```
 2. Create a `.env` in the root directory and add the contents of `.env.sample` to it with real values
 ```

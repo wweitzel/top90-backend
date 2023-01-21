@@ -116,7 +116,9 @@ func extractThumbnail(goal top90.Goal, s3Client *s3.S3Client, bucketName string,
 
 	s3Client.DownloadFile(goal.S3ObjectKey, bucketName, videoFilename)
 	thumbnailFilename := fmt.Sprintf("tmp/thumb#%d.png", i)
-	cmd := exec.Command("/usr/local/bin/ffmpeg", "-i", videoFilename, "-vframes", "1", thumbnailFilename)
+
+	ffmpegPath := os.Getenv("TOP90_FFMPEG_PATH")
+	cmd := exec.Command(ffmpegPath, "-i", videoFilename, "-vframes", "1", thumbnailFilename)
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
 

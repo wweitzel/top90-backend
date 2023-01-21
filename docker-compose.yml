@@ -27,9 +27,9 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - EDGE_PORT=4566
       - SERVICES=s3
-      - DATA_DIR=./docker-data/localstack-data
+      - PERSISTENCE=./docker-data/localstack-data
     ports: 
       - '4566-4583:4566-4583'
     volumes: 
-      - "./docker-data/localstack-data:/tmp/localstack"
+      - "./docker-data/localstack-data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"

@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Ltime)
 	log.Println("Starting Run...")
 
 	// Load config from .env into environment variables
