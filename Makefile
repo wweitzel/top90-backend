@@ -16,7 +16,7 @@ run-poller:
 	go run ./cmd/poller/...
 
 build-poller-linux:
-	cd cmd/poller && GOOS=linux go build -o ../../bin/goal_poller_linux
+	cd cmd/poller && GOOS=linux GOARCH=amd64 go build -o ../../bin/goal_poller_linux
 
 build-poller: build-poller-linux
 	cd cmd/poller && go build -o ../../bin/goal_poller
@@ -31,7 +31,7 @@ run-server:
 
 build-server:
 	cd cmd/server && go build -o ../../bin/server
-	docker build -t top90-server-v${APP_VERSION} .
+	docker build --platform=linux/amd64 -t top90-server-v${APP_VERSION} .
 
 save-server-image:
 	docker save -o ./bin/top90-server-v${APP_VERSION}.tar top90-server-v${APP_VERSION}
