@@ -10,10 +10,11 @@ import (
 type RedditPost struct {
 	Kind string
 	Data struct {
-		URL         string
-		Title       string
-		Created_utc float64
-		Id          string
+		URL                  string
+		Title                string
+		Created_utc          float64
+		Id                   string
+		Link_flair_css_class string
 	}
 }
 
@@ -27,7 +28,7 @@ type RedditPostsResponse struct {
 	}
 }
 
-const newPostsBaseUrl = `https://api.reddit.com/r/soccer/search/?q=flair%3Amedia&include_over_18=on&restrict_sr=on&sort=new&limit=100`
+const newPostsBaseUrl = `https://api.reddit.com/r/soccer/new?include_over_18=on`
 
 // after is a unix epoch to get posts after
 func (client *RedditClient) GetNewPosts(after int64) []RedditPost {
@@ -39,7 +40,9 @@ func (client *RedditClient) GetNewPosts(after int64) []RedditPost {
 		return newPosts
 	}
 
-	printDataUrls("New links:", newPosts)
+	newMediaPosts := getMediaPosts(newPosts)
+
+	printDataUrls("New links:", newMediaPosts)
 
 	var supportedPosts = getSupportedPosts(newPosts)
 	printDataUrls("Supported links:", supportedPosts)
@@ -90,6 +93,16 @@ func (client *RedditClient) getAllPosts(searchTerm string) []RedditPost {
 func buildSearchUrl(searchTerm string, after string) string {
 	return `https://api.reddit.com/r/soccer/search/?q=flair%3Amedia+` + searchTerm +
 		`&include_over_18=on&restrict_sr=on&sort=new&limit=100&after=` + after
+}
+
+func getMediaPosts(allPosts []RedditPost) []RedditPost {
+	var mediaPosts []RedditPost
+	for _, post := range allPosts {
+		if post.Data.Link_flair_css_class == "media" {
+			mediaPosts = append(mediaPosts, post)
+		}
+	}
+	return mediaPosts
 }
 
 func getUnprocessedPosts(postsResponse RedditPostsResponse, lastProcessedEpoch int64) []RedditPost {
