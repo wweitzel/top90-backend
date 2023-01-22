@@ -148,11 +148,11 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	// Extract the thumbnail
 	randomId := uuid.NewString()
 	randomId = strings.Replace(randomId, "-", "", -1)
-	thumbnailFilename := fmt.Sprintf("tmp/%s.png", randomId)
+	thumbnailFilename := fmt.Sprintf("tmp/%s.jpg", randomId)
 	defer os.Remove(thumbnailFilename)
 
 	ffmpegPath := os.Getenv("TOP90_FFMPEG_PATH")
-	cmd := exec.Command(ffmpegPath, "-i", videoFile.Name(), "-vframes", "1", thumbnailFilename)
+	cmd := exec.Command(ffmpegPath, "-i", videoFile.Name(), "-q:v", "2", "-vframes", "1", thumbnailFilename)
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
 
@@ -219,7 +219,7 @@ func (poller *GoalPoller) insertAndUpload(goal top90.Goal, videoFilename string,
 	videoKey := createKey("mp4")
 	goal.S3ObjectKey = videoKey
 
-	thumbnailKey := createKey("png")
+	thumbnailKey := createKey("jpg")
 	goal.ThumbnailS3Key = thumbnailKey
 
 	log.Println("inserting goal...", goal.RedditFullname)
@@ -236,7 +236,7 @@ func (poller *GoalPoller) insertAndUpload(goal top90.Goal, videoFilename string,
 		log.Println("Successfully uploaded video to s3", videoKey)
 	}
 
-	err = poller.S3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/png", poller.BucketName)
+	err = poller.S3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/jpg", poller.BucketName)
 	if err != nil {
 		log.Println("s3 thumbanil upload failed", err)
 	} else {
