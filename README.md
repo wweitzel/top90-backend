@@ -1,6 +1,6 @@
 # top90-backend
 
-Top90 is a website that populates with soccer goals in real time as they happen around the world
+top90 is a website that populates with soccer goals in real time as they happen around the world.
 
 https://top90.io
 
@@ -23,7 +23,7 @@ $ brew install awscli
 $ brew install golang-migrate
 $ brew install ffmpeg
 ```
-2. Create a `.env` in the root directory and add the contents of `.env.sample` to it with real values
+2. Create a `.env` in the root directory and add the contents of `.env.sample` to it.
 ```
 cp .env.sample .env
 ```
@@ -32,22 +32,21 @@ cp .env.sample .env
 # Make sure docker daemon is running
 $ docker-compose up
 ```
-4. Seed local data
-
-NOTE: You need to get an api key from https://rapidapi.com/api-sports/api/api-football/ and set it as API_FOOTBALL_RAPID_API_KEY in your .env for the seed to work!
+4. Seed local database
 ```
 $ make seed
-# Note: Answer "y" to the promopt when you see it
+# Answer "y" to the prompt when you see it
 ```
-5. Go to http://localhost:8090/?pgsql=db
-6. Login with the following credentials
+5. Go to http://127.0.0.1:7171/goals in a browser to verify backend is running and returning data.
+6. Thats it. If interested, the frontend repo is here https://github.com/wweitzel/top90-frontend.
+
+## Viewing local database
+Part of the docker compose runs a database viewer. Go to http://localhost:8090/?pgsql=db logging in with the following to see it.
 ```
 username: admin
 password: admin
 database: redditsoccergoals
 ```
-7. Look at the tables in the UI and verify they have data
-8. (Optional) You can run the front end locally to see the goals https://github.com/wweitzel/top90-frontend. Note: Make sure you switch it to connect to local backend!
 
 ## Debugging
 For vscode, make a `.vscode/launch.json` file and paste the following in it.
@@ -62,22 +61,6 @@ For vscode, make a `.vscode/launch.json` file and paste the following in it.
             "mode": "auto",
             "program": "./cmd/server",
             "cwd": "./"
-        },
-        {
-            "name": "Debug Poller",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "./cmd/poller",
-            "cwd": "./"
-        },
-        {
-            "name": "ApiFootball Ingest",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "./cmd/apifootball_ingest",
-            "cwd": "./"
         }
     ]
 }
@@ -91,34 +74,10 @@ migrate create -ext sql -dir internal/db/migrations -seq name_of_migration
 ```
 
 ## Resetting Data
-If you want to start fresh, you can easily wipe all your data by deleting the two folders in `docker-data` or simpley run `make seed` which will repopulate the local db/s3. 
+If you want to start fresh, you can easily wipe all your data by deleting the two folders in `docker-data` or simply run `make seed` which will repopulate the local db/s3. 
 
-# Remaining Work
-Finish the internal/apifootball client in order to:
-- Add Premier League only capability
-- Add true search capability based on team on player by matching goals to a player/team stored in db
-- Show team schedules and rosters and click them to see the goals
-- Use int64 for all id columns
-- Convert createdAt fields to timestamp with timezone
-
-## Leagues Supported
-- England - Premier League
-- Italy - Serie A
-- Spain - La Liga
-- Germany - Bundesliga
-- France - Ligue 1
-- World - UEFA Champions League
-- World - UEFA Europa League
-- World - World Cup
-
-## Linux Commands
-
-#### Run docker container in background restarting automatically unless stopped
-```
-$ docker run -p 7171:7171 -d --restart unless-stopped top90-server-v0
-```
-
-#### Renew cert
+## Renew cert
+Command to renew cert on the ec2
 ```
 $ docker-compose run --rm certbot renew && docker-compose restart
 ```

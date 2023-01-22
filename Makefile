@@ -88,4 +88,4 @@ clear-tmp:
 	rm -rf tmp
 	mkdir tmp
 
-seed: clear-tmp migrate-down migrate-up create-s3-bucket ingest-apifootball run-poller
+seed: clear-tmp migrate-down migrate-up create-s3-bucket run-poller
