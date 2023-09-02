@@ -352,14 +352,15 @@ func (dao *PostgresDAO) GetTeamsForLeagueAndSeason(leagueId, season int) ([]apif
 }
 
 func (dao *PostgresDAO) InsertFixture(fixture *apifootball.Fixture) (*apifootball.Fixture, error) {
-	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO UPDATE SET %s = $8 RETURNING *",
 		tableNames.Fixtures,
 		fixtureColumns.Id, fixtureColumns.Referee, fixtureColumns.Date, fixtureColumns.HomeTeamId, fixtureColumns.AwayTeamId, fixtureColumns.LeagueId, fixtureColumns.Season,
 		fixtureColumns.Id,
+		fixtureColumns.Date,
 	)
 
 	row := dao.DB.QueryRow(
-		query, fixture.Id, fixture.Referee, time.Unix(fixture.Timestamp, 0), fixture.Teams.Home.Id, fixture.Teams.Away.Id, fixture.LeagueId, fixture.Season,
+		query, fixture.Id, fixture.Referee, time.Unix(fixture.Timestamp, 0), fixture.Teams.Home.Id, fixture.Teams.Away.Id, fixture.LeagueId, fixture.Season, fixture.Date,
 	)
 
 	err := row.Scan(&fixture.Id, &fixture.Referee, &fixture.Date, &fixture.Teams.Home.Id, &fixture.Teams.Away.Id, &fixture.LeagueId, &fixture.Season, &fixture.CreatedAt)
