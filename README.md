@@ -48,6 +48,12 @@ password: admin
 database: redditsoccergoals
 ```
 
+## Tests
+```
+# Make sure docker daemon is running
+$ go test ./...
+```
+
 ## Debugging
 For vscode, make a `.vscode/launch.json` file and paste the following in it.
 ```
