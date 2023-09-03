@@ -68,12 +68,17 @@ func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any)
 func getTeamsWhereClause(filter GetTeamsFilter, args []any) (string, []any) {
 	whereClause := ""
 
+	whereClause = whereClause + "$1"
+	args = append(args, "TRUE")
+
 	if filter.Country != "" {
-		whereClause = whereClause + fmt.Sprintf(" %s = $1", teamColumns.Country)
+		whereClause = whereClause + fmt.Sprintf(" AND %s = $%d", teamColumns.Country, len(args)+1)
 		args = append(args, filter.Country)
-	} else {
-		whereClause = whereClause + " $1"
-		args = append(args, "TRUE")
+	}
+
+	if filter.SearchTerm != "" {
+		whereClause = whereClause + fmt.Sprintf(" AND %s ILIKE $%d", teamColumns.Name, len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", filter.SearchTerm))
 	}
 
 	return whereClause, args

@@ -143,6 +143,11 @@ func TestGetTeams(t *testing.T) {
 
 	teams, _ = dao.GetTeams(GetTeamsFilter{Country: "lkjlk"})
 	assert.Equal(t, len(teams), 0)
+
+	teams, err = dao.GetTeams(GetTeamsFilter{SearchTerm: "team1"})
+	assert.NilError(t, err)
+	assert.Equal(t, len(teams), 1)
+	assert.Equal(t, teams[0].Id, 1)
 }
 
 func assertEqual(t *testing.T, actual top90.Goal, expected top90.Goal) {

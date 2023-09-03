@@ -244,10 +244,17 @@ func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
 	season, _ := strconv.Atoi(queryParams.Get("season"))
+	searchTerm := queryParams.Get("searchTerm")
 
 	var teams []apifootball.Team
 	var err error
-	teams, err = dao.GetTeamsForLeagueAndSeason(leagueId, season)
+
+	if searchTerm != "" {
+		teams, err = dao.GetTeams(db.GetTeamsFilter{SearchTerm: searchTerm})
+	} else {
+		teams, err = dao.GetTeamsForLeagueAndSeason(leagueId, season)
+	}
+
 	if err != nil {
 		log.Println(err)
 	}
