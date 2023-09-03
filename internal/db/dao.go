@@ -52,7 +52,8 @@ type GetFixuresFilter struct {
 }
 
 type GetTeamsFilter struct {
-	Country string
+	Country    string
+	SearchTerm string
 }
 
 func NewPostgresDAO(db *sql.DB) Top90DAO {
