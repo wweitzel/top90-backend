@@ -4,41 +4,44 @@ top90 is a website that populates with soccer goals in real time as they happen 
 
 https://top90.io
 
-## Applications in this repo
-- server - The server is the API for the website
-
-- goal_poller - The goal poller is a script that runs as a cron job and polls reddit.com/r/soccer for new goals/videos to store in db/s3
-
-- apifootball_ingest - Script to store apifootball data in the database
-
 # Contributing Guide
 Anyone is welcome to submit a PR. PRs should be tested and verified locally first if possible.
 
+## Applications in this repo
+- server - The API for the website.
+- goal_poller - Polls reddit.com/r/soccer for new goals/videos to store in db/s3.
+- apifootball_ingest - Gets up to date team, league, and fixture data.
+
 ## Running Locally
-1. Install dependencies. If using homebrew you can run the following.
+1. Install Go and Docker if you do not have them installed.
 ```
 $ brew install go
 $ brew install --cask docker
+```
+2. Install awscli, golang-migrate, and ffmpeg.
+```
 $ brew install awscli
 $ brew install golang-migrate
 $ brew install ffmpeg
 ```
-2. Create a `.env` in the root directory and add the contents of `.env.sample` to it.
+3. Create local environment files.
 ```
 cp .env.sample .env
+cp .env.docker.sample .env.docker
 ```
-3. Start dev db and s3 in docker.
+4. Start dev db and s3 in docker.
 ```
-# Make sure docker daemon is running
 $ docker-compose up
 ```
-4. Seed local database
+5. Seed local database.
 ```
 $ make seed
-# Answer "y" to the prompt when you see it
 ```
-5. Go to http://127.0.0.1:7171/goals in a browser to verify backend is running and returning data.
-6. Thats it. If interested, the frontend repo is here https://github.com/wweitzel/top90-frontend.
+6. Run the server
+```
+$ go run ./cmd/server/...
+```
+7. Go to http://127.0.0.1:7171/goals in a browser to verify backend is running and returning data.
 
 ## Viewing local database
 Part of the docker compose runs a database viewer. Go to http://localhost:8090/?pgsql=db logging in with the following to see it.

@@ -44,7 +44,7 @@ func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {
 	if os.Getenv("ENV") == "dev" {
 		return &aws.Config{
 			Region:           aws.String("us-east-1"),
-			Endpoint:         aws.String("http://127.0.0.1:4566"),
+			Endpoint:         aws.String(os.Getenv("TOP90_AWS_S3_ENDPOINT")),
 			S3ForcePathStyle: aws.Bool(true),
 			Credentials: credentials.NewStaticCredentials(
 				awsAccessKey,

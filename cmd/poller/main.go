@@ -35,10 +35,10 @@ func main() {
 		log.Fatalln("Failed to connect to s3 bucket", err)
 	}
 
-	opts := []chromedp.ExecAllocatorOption{
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3830.0 Safari/537.36"),
-		chromedp.Headless,
-	}
+	)
+
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer cancel()
 
