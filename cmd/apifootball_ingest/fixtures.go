@@ -7,7 +7,7 @@ import (
 
 func (app *App) IngestFixtures() {
 	// TODO: Take from command line input
-	const SEASON = 2022
+	const SEASON = 2023
 
 	leagues, err := app.dao.GetLeagues()
 

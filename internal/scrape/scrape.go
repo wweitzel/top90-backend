@@ -103,10 +103,16 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 	log.Printf("New tab: %s", url)
 
 	var videoNodes []*cdp.Node
+
 	err := chromedp.Run(newTabCtx,
 		chromedp.Navigate(url),
+		chromedp.WaitVisible(`body`, chromedp.ByQuery),
 		chromedp.WaitVisible(`video`, chromedp.ByQuery),
-		chromedp.Nodes(`video`, &videoNodes, chromedp.ByQuery),
+		chromedp.ActionFunc(func(context.Context) error {
+			log.Printf(">>>>>>>>>>>>>>>>>>>> video IS VISIBLE")
+			return nil
+		}),
+		chromedp.Nodes(`source`, &videoNodes, chromedp.ByQuery),
 	)
 	if err != nil {
 		log.Printf("%v %s", err, url)

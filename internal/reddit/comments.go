@@ -46,6 +46,7 @@ func (client *RedditClient) GetComments(postId string) []RedditComment {
 	err = json.Unmarshal(body, &commentsResponse)
 	if err != nil {
 		log.Println(postId, err)
+		return []RedditComment{}
 	}
 	return commentsResponse[1].Data.Children
 }
@@ -63,6 +64,7 @@ func (client *RedditClient) GetComment(commentId string) RedditComment {
 	err = json.Unmarshal(body, &commentResponse)
 	if err != nil {
 		log.Println(commentId, "HAPPENING IN GET COMMENT!!!!!!!!", err)
+		return RedditComment{}
 	}
 	return commentResponse.Data.Children[0]
 }
