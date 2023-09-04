@@ -15,6 +15,7 @@ var LEAGUES_TO_INGEST = []leagueCountryAndName{
 	{Country: "World", Name: "UEFA Champions League"},
 	{Country: "World", Name: "UEFA Europa League"},
 	{Country: "World", Name: "World Cup"},
+	{Country: "USA", Name: "Major League Soccer"},
 	// TODO: Leaving these uncommented causes too many requests error with the seed.
 	// Need to update the seed to not have to hit apifootball api
 	// {Country: "World", Name: "World Cup - Qualification Intercontinental Play-offs"},

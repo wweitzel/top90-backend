@@ -35,8 +35,15 @@ func main() {
 		log.Fatalln("Failed to connect to s3 bucket", err)
 	}
 
+	opts := []chromedp.ExecAllocatorOption{
+		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3830.0 Safari/537.36"),
+		chromedp.Headless,
+	}
+	ctx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+
 	// Setup a headless chrome browser context
-	ctx, cancel := chromedp.NewContext(context.Background())
+	ctx, cancel = chromedp.NewContext(ctx)
 	if err := chromedp.Run(ctx); err != nil {
 		log.Fatalf("Coult not setup chromedp: %v", err)
 	}
@@ -60,6 +67,12 @@ func main() {
 			SearchTerm: "tottenham",
 		},
 	}
+
+	// https://streamin.me/v/317cdeaf
+	// https://dubz.co/c/dd6e07
+	// https://dubz.co/c/5c71b0
+	// https://streamin.me/v/016f60d8
+	// goalPoller.IngestPost("https://dubz.co/c/0e7b61")
 
 	goalPoller.Run()
 

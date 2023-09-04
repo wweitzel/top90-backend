@@ -2,12 +2,8 @@ package main
 
 import (
 	"log"
-	"net/http"
-	"os"
-	"time"
 
 	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/apifootball"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/poller"
 )
@@ -26,41 +22,30 @@ func main() {
 
 	dao := db.NewPostgresDAO(DB)
 
-	host := os.Getenv("API_FOOTBALL_RAPID_API_HOST")
-	apiKey := os.Getenv("API_FOOTBALL_RAPID_API_KEY")
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	apifootballClient := apifootball.NewClient(host, apiKey, httpClient)
+	allTeams, err := dao.GetTeams(db.GetTeamsFilter{})
+	allGoals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 100000}, db.GetGoalsFilter{})
 
-	worldCupTeams, err := apifootballClient.GetTeams(10, 2022)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	goals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 100000}, db.GetGoalsFilter{})
 	if err != nil {
 		log.Fatalf("Failed %v", err)
 	}
 
-	notAWorldCupTeam := 0
-	worldCupTeam := 0
-	foundWorldCupFixture := 0
+	noTeamFound := 0
+	foundFixture := 0
 	couldNotDetermineTeamName := 0
 	couldNotDetermineFixture := 0
 
-	for _, goal := range goals {
+	for _, goal := range allGoals {
 		firstTeamNameFromPost, err := poller.GetTeamName(goal.RedditPostTitle)
 		if err != nil {
 			couldNotDetermineTeamName++
 			continue
 		}
 
-		team, err := poller.GetTeamForTeamName(firstTeamNameFromPost, worldCupTeams)
+		team, err := poller.GetTeamForTeamName(firstTeamNameFromPost, allTeams)
 		if err != nil {
-			notAWorldCupTeam++
+			noTeamFound++
 			continue
 		}
-
-		worldCupTeam++
 
 		fixtures, err := dao.GetFixtures(db.GetFixuresFilter{Date: goal.RedditPostCreatedAt})
 		if err != nil {
@@ -74,18 +59,19 @@ func main() {
 			continue
 		}
 
+		foundFixture++
+
 		log.Println(fixture.LeagueId)
 		log.Println("-------------------------------------------------------------------------------------")
 		log.Println(goal.RedditPostTitle)
 
-		foundWorldCupFixture++
-
 		if goal.FixtureId == 0 {
-			// _, err := dao.UpdateGoal(goal.Id, top90.Goal{FixtureId: fixture.Id})
+			_, err := dao.UpdateGoal(goal.Id, top90.Goal{FixtureId: fixture.Id})
 			if err != nil {
 				log.Fatalln(err)
+			} else {
+				log.Println("Success!")
 			}
-			log.Println("Success!")
 		} else {
 			log.Println("Already determined fixture")
 		}
@@ -93,9 +79,8 @@ func main() {
 	}
 
 	log.Println("=====================================================================================")
-	log.Println("Total:", len(goals))
-	log.Println("Total World cup team games:", worldCupTeam)
-	log.Println("Total Not World cup team games:", notAWorldCupTeam)
+	log.Println("Processed: ", len(allGoals))
+	log.Println("No Team Found:", noTeamFound)
 	log.Println("Total Could not determine Fixtures:", couldNotDetermineFixture)
-	log.Println("Total Found World Cup Fixtures:", foundWorldCupFixture)
+	log.Println("Total Found World Cup Fixtures:", foundFixture)
 }

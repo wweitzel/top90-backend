@@ -162,7 +162,19 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	}
 
 	log.Println(videoFile.Name(), '\n')
-	// TDOO: Handle empty file (download didn't work)
+
+	fi, err := videoFile.Stat()
+	if err != nil {
+		log.Println("warning: Could not determine file size. This goal will not be stored in the database.")
+		return
+	}
+
+	fmt.Printf("file size: %d bytes long", fi.Size())
+
+	if fi.Size() < 1 {
+		log.Println("warning: Empty file. This goal will not be stored in the database.")
+		return
+	}
 
 	// Insert goal into db and upload the mp4 file to s3
 	redditFullName := post.Kind + "_" + post.Data.Id
@@ -192,16 +204,8 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 		fixtures, _ := poller.Dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
 		fixture, err := GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
 
-		premierLeagueId := 39
-		championsLeagueId := 2
-		friendliesLeagueId := 10
-		worldCupLeagueId := 1
-
-		if err != nil || (fixture.LeagueId != premierLeagueId &&
-			fixture.LeagueId != championsLeagueId &&
-			fixture.LeagueId != friendliesLeagueId &&
-			fixture.LeagueId != worldCupLeagueId) {
-			log.Println("warning:", "no premier, champions, friendlies, worldcup league fixture for", team.Name, "on date", goal.RedditPostCreatedAt)
+		if err != nil {
+			log.Println("warning:", "no fixture for", team.Name, "on date", goal.RedditPostCreatedAt)
 		} else {
 			goal.FixtureId = fixture.Id
 		}
