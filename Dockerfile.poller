@@ -3,7 +3,12 @@
 FROM golang:1.19-alpine
 
 WORKDIR /app
+
+RUN apk add chromium
+RUN apk add ffmpeg
+
 RUN mkdir bin
+RUN mkdir tmp
 
 COPY go.mod ./
 COPY go.sum ./
@@ -13,6 +18,6 @@ ADD cmd cmd
 
 RUN go mod download
 
-RUN cd cmd/server && go build -o ../../bin/server
+RUN cd cmd/poller && go build -o ../../bin/poller
 
-CMD [ "./bin/server" ]
+CMD [ "./bin/poller" ]

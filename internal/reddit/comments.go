@@ -66,7 +66,11 @@ func (client *RedditClient) GetComment(commentId string) RedditComment {
 		log.Println(commentId, "HAPPENING IN GET COMMENT!!!!!!!!", err)
 		return RedditComment{}
 	}
-	return commentResponse.Data.Children[0]
+	if len(commentResponse.Data.Children) > 0 {
+		return commentResponse.Data.Children[0]
+	}
+
+	return RedditComment{}
 }
 
 // TODO: Probably a better way to handle this

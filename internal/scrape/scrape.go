@@ -97,7 +97,7 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 	newTabCtx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
-	newTabCtx, cancel = context.WithTimeout(newTabCtx, 30*time.Second)
+	newTabCtx, cancel = context.WithTimeout(newTabCtx, 15*time.Second)
 	defer cancel()
 
 	log.Printf("New tab: %s", url)

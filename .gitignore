@@ -1,19 +1,16 @@
 **/tmp
 
 .env
-.env.production
-.env.production.local
-keys
+.env.*
+!.env.docker.sample
+
 bin
-api-football
 docker-data
+
+keys
 
 .DS_Store
 **/.DS_Store
 .vscode
-
-cmd/goal_poller/.env
-cmd/test_client/.env
-cmd/server/.env
 
 **/__debug_bin
