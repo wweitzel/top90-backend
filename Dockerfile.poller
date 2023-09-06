@@ -10,14 +10,12 @@ RUN apk add ffmpeg
 RUN mkdir bin
 RUN mkdir tmp
 
-COPY go.mod ./
-COPY go.sum ./
-
-ADD internal internal
-ADD cmd cmd
+COPY go.mod .
+COPY go.sum .
+COPY internal internal
+COPY cmd cmd
 
 RUN go mod download
-
 RUN cd cmd/poller && go build -o ../../bin/poller
 
 CMD [ "./bin/poller" ]

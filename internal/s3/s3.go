@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -165,5 +166,7 @@ func (client *S3Client) NewSignedGetURL(key string, bucket string, expire time.D
 		return "", fmt.Errorf(key, err)
 	}
 
-	return url, nil
+	// When running in docker locally, host.docker.internal will be in the url
+	result := strings.Replace(url, "host.docker.internal", "localhost", -1)
+	return result, nil
 }

@@ -14,15 +14,11 @@ Anyone is welcome to submit a PR. PRs should be tested and verified locally firs
 
 ## Running Locally
 1. Install Go and Docker if you do not have them installed.
-```
-$ brew install go
-$ brew install --cask docker
-```
 2. Install awscli, golang-migrate, and ffmpeg.
 ```
-$ brew install awscli
-$ brew install golang-migrate
-$ brew install ffmpeg
+brew install awscli
+brew install golang-migrate
+brew install ffmpeg
 ```
 3. Create local environment files.
 ```
@@ -31,17 +27,26 @@ cp .env.docker.sample .env.docker
 ```
 4. Start dev db and s3 in docker.
 ```
-$ docker-compose up
+docker-compose up
 ```
-5. Seed local database.
+5. Seed local database
 ```
-$ make seed
+make seed
 ```
 6. Run the server
 ```
-$ go run ./cmd/server/...
+go run ./cmd/server/...
 ```
-7. Go to http://127.0.0.1:7171/goals in a browser to verify backend is running and returning data.
+7. Make a request to the API
+```
+curl http://127.0.0.1:7171/goals
+```
+
+## Tests
+```
+# Make sure docker daemon is running
+$ go test ./...
+```
 
 ## Viewing local database
 Part of the docker compose runs a database viewer. Go to http://localhost:8090/?pgsql=db logging in with the following to see it.
@@ -49,12 +54,6 @@ Part of the docker compose runs a database viewer. Go to http://localhost:8090/?
 username: admin
 password: admin
 database: redditsoccergoals
-```
-
-## Tests
-```
-# Make sure docker daemon is running
-$ go test ./...
 ```
 
 ## Debugging
