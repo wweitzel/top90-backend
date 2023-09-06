@@ -11,7 +11,7 @@ services:
       POSTGRES_USER: ${TOP90_DB_USER}
       POSTGRES_DB: ${TOP90_DB_NAME}
     ports:
-      - 5432:5432
+      - 5434:5432
 
   adminer:
     depends_on:
