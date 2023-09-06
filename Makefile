@@ -29,7 +29,7 @@ run-server-docker:
 
 build-server:
 	cd cmd/server && go build -o ../../bin/server
-	docker build --platform=linux/amd64 -t top90-server-v${APP_VERSION} .
+	docker build -t top90-server-v${APP_VERSION} .
 
 build-server-linux:
 	cd cmd/server && GOOS=linux GOARCH=amd64 go build -o ../../bin/server_linux
