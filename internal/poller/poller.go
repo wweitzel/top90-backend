@@ -125,8 +125,12 @@ func (poller *GoalPoller) ingestPosts(posts []reddit.RedditPost, options Options
 
 func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	defer wg.Done()
-
 	log.Println("\nprocessing...", post.Data.Id)
+
+	if len(post.Data.Title) > 120 {
+		log.Println("skipping processing. post title does not look like the title of a goal post.")
+		return
+	}
 
 	sourceUrl := poller.getSourceUrl(post)
 	log.Println("final source url: ", "[", sourceUrl, "]")
