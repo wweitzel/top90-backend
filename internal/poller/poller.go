@@ -127,7 +127,7 @@ func (poller *GoalPoller) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 	defer wg.Done()
 	log.Println("\nprocessing...", post.Data.Id)
 
-	if len(post.Data.Title) > 120 {
+	if len(post.Data.Title) > 110 {
 		log.Println("skipping processing. post title does not look like the title of a goal post.")
 		return
 	}
