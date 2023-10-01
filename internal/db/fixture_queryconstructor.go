@@ -1,0 +1,84 @@
+package db
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/wweitzel/top90/internal/apifootball"
+)
+
+func getFixturesQuery(filter GetFixuresFilter) (string, []any) {
+	var args []any
+	whereClause, args := getFixturesWhereClause(filter, args)
+	query := fmt.Sprintf(
+		`SELECT
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			home_teams.name as home_team_name,
+			home_teams.logo as home_team_logo,
+			away_teams.name as away_team_name,
+			away_teams.logo as away_team_logo
+			FROM %s
+		JOIN %s home_teams ON home_teams.%s=%s
+		JOIN %s away_teams ON away_teams.%s=%s
+		WHERE %s ORDER BY %s ASC`,
+		tableNames.Fixtures+"."+fixtureColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.Referee,
+		tableNames.Fixtures+"."+fixtureColumns.Date,
+		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.LeagueId,
+		tableNames.Fixtures+"."+fixtureColumns.Season,
+		tableNames.Fixtures+"."+fixtureColumns.CreatedAt,
+		tableNames.Fixtures,
+		tableNames.Teams,
+		teamColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
+		tableNames.Teams,
+		teamColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		whereClause,
+		fixtureColumns.Date)
+	return query, args
+}
+
+func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any) {
+	whereClause := ""
+
+	if filter.LeagueId != 0 {
+		whereClause = whereClause + fmt.Sprintf(" %s = $1", fixtureColumns.LeagueId)
+		args = append(args, filter.LeagueId)
+	} else {
+		whereClause = whereClause + " $1"
+		args = append(args, "TRUE")
+	}
+
+	if !filter.Date.IsZero() {
+		searchStartDate := filter.Date.Add(-12 * time.Hour)
+		searchEndtDate := filter.Date.Add(12 * time.Hour)
+
+		whereClause = whereClause + fmt.Sprintf(" AND %s >= $2 and %s <= $3",
+			tableNames.Fixtures+"."+fixtureColumns.Date,
+			tableNames.Fixtures+"."+fixtureColumns.Date,
+		)
+		args = append(args, searchStartDate)
+		args = append(args, searchEndtDate)
+	}
+
+	return whereClause, args
+}
+
+func insertFixtureQuery(fixture *apifootball.Fixture) string {
+	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO UPDATE SET %s = $8 RETURNING *",
+		tableNames.Fixtures,
+		fixtureColumns.Id, fixtureColumns.Referee, fixtureColumns.Date, fixtureColumns.HomeTeamId, fixtureColumns.AwayTeamId, fixtureColumns.LeagueId, fixtureColumns.Season,
+		fixtureColumns.Id,
+		fixtureColumns.Date,
+	)
+}
