@@ -55,6 +55,6 @@ seed:
 	mkdir tmp
 	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?sslmode=disable" -path internal/db/migrations down
 	migrate -database "postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?sslmode=disable" -path internal/db/migrations up
-	aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
+	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 aws --endpoint-url=http://localhost:4566 s3 mb s3://reddit-soccer-goals
 	make build-poller
 	make run-poller-docker

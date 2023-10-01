@@ -18,7 +18,7 @@ Anyone is welcome to submit a PR. PRs should be tested and verified locally firs
 ```
 brew install awscli
 brew install golang-migrate
-brew install ffmpeg
+brew install ffmpeg (optional)
 ```
 3. Create local environment files.
 ```
@@ -43,9 +43,9 @@ curl http://127.0.0.1:7171/goals
 ```
 
 ## Tests
+Make sure docker is running. The tests spin up pg instances for integration testing.
 ```
-# Make sure docker daemon is running
-$ go test ./...
+go test ./...
 ```
 
 ## Viewing local database
