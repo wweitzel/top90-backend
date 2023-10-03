@@ -5,7 +5,7 @@ import (
 
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/poller"
+	"github.com/wweitzel/top90/internal/ingest"
 )
 
 func main() {
@@ -35,13 +35,13 @@ func main() {
 	couldNotDetermineFixture := 0
 
 	for _, goal := range allGoals {
-		firstTeamNameFromPost, err := poller.GetTeamName(goal.RedditPostTitle)
+		firstTeamNameFromPost, err := ingest.GetTeamName(goal.RedditPostTitle)
 		if err != nil {
 			couldNotDetermineTeamName++
 			continue
 		}
 
-		team, err := poller.GetTeamForTeamName(firstTeamNameFromPost, allTeams)
+		team, err := ingest.GetTeamForTeamName(firstTeamNameFromPost, allTeams)
 		if err != nil {
 			noTeamFound++
 			continue
@@ -53,7 +53,7 @@ func main() {
 			continue
 		}
 
-		fixture, err := poller.GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
+		fixture, err := ingest.GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
 		if err != nil {
 			couldNotDetermineFixture++
 			continue
