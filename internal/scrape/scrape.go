@@ -18,8 +18,8 @@ type Scraper struct {
 	BrowserContext context.Context
 }
 
-// Attampts to use Colly retrieve the url of a direct download link to the video.
-// If that fails, will try to use chromedp.
+// Attampts to use Colly retrieve the url of a direct download link to the video
+// at the specified url. If that fails, will try to use chromedp.
 func (scraper *Scraper) GetVideoSourceUrl(url string) string {
 	var sourceUrl string
 
@@ -63,7 +63,7 @@ func (scraper *Scraper) GetVideoSourceUrl(url string) string {
 
 // Loops theough the replies and returns immediately when a video source
 // could successfully be extracted from one
-func (scraper *Scraper) GetSourceUrlFromMirrors(replyIds []string) string {
+func (scraper *Scraper) GetVideoSourceUrlFromMirrors(replyIds []string) string {
 	httpClient := &http.Client{
 		Timeout: time.Second * 10,
 	}
