@@ -49,10 +49,7 @@ type GetTeamsResponse struct {
 func (s *Server) GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
 	var apiInfo GetApiInfoResponse
 	apiInfo.Message = "Welcome to the top90 API ⚽️ 🥅 "
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(apiInfo)
-	w.Write(json)
+	respond(w, apiInfo)
 }
 
 func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,13 +76,9 @@ func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	getFixturesResponse := GetFixturesResponse{
+	respond(w, GetFixturesResponse{
 		Fixtures: fixtures,
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(getFixturesResponse)
-	w.Write(json)
+	})
 }
 
 func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
@@ -114,27 +107,14 @@ func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range goals {
-		videoUrl, err := s.s3Client.NewSignedGetURL(goals[i].S3ObjectKey, s.config.AwsBucketName, time.Minute*10)
-		if err != nil {
-			log.Println(err)
-		}
-		thumbnailUrl, err := s.s3Client.NewSignedGetURL(goals[i].ThumbnailS3Key, s.config.AwsBucketName, time.Minute*10)
-		if err != nil {
-			log.Println(err)
-		}
-
-		goals[i].PresignedUrl = videoUrl
-		goals[i].ThumbnailPresignedUrl = thumbnailUrl
+		goals[i].PresignedUrl = s.presignedUrl(goals[i].S3ObjectKey)
+		goals[i].ThumbnailPresignedUrl = s.presignedUrl(goals[i].ThumbnailS3Key)
 	}
 
-	getGoalsResponse := GetGoalsResponse{
+	respond(w, GetGoalsResponse{
 		Goals: goals,
 		Total: count,
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(getGoalsResponse)
-	w.Write(json)
+	})
 }
 
 func (s *Server) GetGoalHandler(w http.ResponseWriter, r *http.Request) {
@@ -145,26 +125,12 @@ func (s *Server) GetGoalHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	// TODO: This is nearly duplicated with the code in getGoals
-	videoUrl, err := s.s3Client.NewSignedGetURL(goal.S3ObjectKey, s.config.AwsBucketName, time.Minute*1)
-	if err != nil {
-		log.Println(err)
-	}
-	thumbnailUrl, err := s.s3Client.NewSignedGetURL(goal.ThumbnailS3Key, s.config.AwsBucketName, time.Minute*10)
-	if err != nil {
-		log.Println(err)
-	}
+	goal.PresignedUrl = s.presignedUrl(goal.S3ObjectKey)
+	goal.ThumbnailPresignedUrl = s.presignedUrl(goal.ThumbnailS3Key)
 
-	goal.PresignedUrl = videoUrl
-	goal.ThumbnailPresignedUrl = thumbnailUrl
-
-	getGoalResponse := GetGoalResponse{
+	respond(w, GetGoalResponse{
 		Goal: goal,
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(getGoalResponse)
-	w.Write(json)
+	})
 }
 
 func (s *Server) GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,13 +139,9 @@ func (s *Server) GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	getLeaguesResponse := GetLeaguesResponse{
+	respond(w, GetLeaguesResponse{
 		Leagues: leagues,
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(getLeaguesResponse)
-	w.Write(json)
+	})
 }
 
 func (s *Server) GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
@@ -201,13 +163,9 @@ func (s *Server) GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	getTeamsResponse := GetTeamsResponse{
+	respond(w, GetTeamsResponse{
 		Teams: teams,
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(getTeamsResponse)
-	w.Write(json)
+	})
 }
 
 func (s *Server) MessagePreviewHandler(w http.ResponseWriter, r *http.Request) {
@@ -247,4 +205,18 @@ func (s *Server) MessagePreviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "text/html")
 	w.Write([]byte(html))
+}
+
+func (s *Server) presignedUrl(objectKey string) string {
+	url, err := s.s3Client.NewSignedGetURL(objectKey, s.config.AwsBucketName, time.Minute*10)
+	if err != nil {
+		log.Println(err)
+	}
+	return url
+}
+
+func respond(w http.ResponseWriter, response any) {
+	w.Header().Add("Content-Type", "application/json")
+	json, _ := json.Marshal(response)
+	w.Write(json)
 }
