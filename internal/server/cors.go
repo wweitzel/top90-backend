@@ -2,6 +2,6 @@ package server
 
 import "net/http"
 
-func EnableCors(w *http.ResponseWriter) {
+func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
