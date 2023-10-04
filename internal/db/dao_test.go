@@ -84,30 +84,10 @@ func TestGetFixtures(t *testing.T) {
 		Referee:  "jimbob",
 		Date:     now,
 		LeagueId: league1.Id,
-		Teams: struct {
-			Home struct {
-				Id     int
-				Name   string
-				Logo   string
-				Winner bool
-			}
-			Away struct {
-				Id     int
-				Name   string
-				Logo   string
-				Winner bool
-			}
-		}{Home: struct {
-			Id     int
-			Name   string
-			Logo   string
-			Winner bool
-		}{Id: team1.Id}, Away: struct {
-			Id     int
-			Name   string
-			Logo   string
-			Winner bool
-		}{Id: team2.Id}},
+		Teams: apifootball.Teams{
+			Home: apifootball.Team{Id: team1.Id},
+			Away: apifootball.Team{Id: team2.Id},
+		},
 	})
 	assert.NilError(t, err)
 

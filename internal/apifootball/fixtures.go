@@ -8,28 +8,20 @@ import (
 
 const fixturesUrl = baseUrl + "fixtures"
 
+type Teams struct {
+	Home Team `json:"home"`
+	Away Team `json:"away"`
+}
+
 type Fixture struct {
-	Id        int
-	Referee   string
-	Date      time.Time
-	Timestamp int64
-	Teams     struct {
-		Home struct {
-			Id     int
-			Name   string
-			Logo   string
-			Winner bool
-		}
-		Away struct {
-			Id     int
-			Name   string
-			Logo   string
-			Winner bool
-		}
-	}
-	LeagueId  int
-	Season    int
-	CreatedAt string
+	Id        int       `json:"id"`
+	Referee   string    `json:"referee"`
+	Date      time.Time `json:"date"`
+	Timestamp int64     `json:"timestamp"`
+	Teams     Teams     `json:"teams"`
+	LeagueId  int       `json:"leagueId"`
+	Season    int       `json:"season"`
+	CreatedAt string    `json:"createdAt"`
 }
 
 func (client *Client) GetFixtures(league, season int) ([]Fixture, error) {
@@ -71,11 +63,9 @@ func toFixtures(response *GetFixturesResponse) []Fixture {
 		fixture.Teams.Home.Id = f.Teams.Home.Id
 		fixture.Teams.Home.Name = f.Teams.Home.Name
 		fixture.Teams.Home.Logo = f.Teams.Home.Logo
-		fixture.Teams.Home.Winner = f.Teams.Home.Winner
 		fixture.Teams.Away.Id = f.Teams.Away.Id
 		fixture.Teams.Away.Name = f.Teams.Away.Name
 		fixture.Teams.Away.Logo = f.Teams.Away.Logo
-		fixture.Teams.Away.Winner = f.Teams.Away.Winner
 		fixture.LeagueId = f.League.Id
 		fixture.Season = f.League.Season
 		fixtures = append(fixtures, fixture)

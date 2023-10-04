@@ -9,17 +9,17 @@ import (
 )
 
 type Goal struct {
-	Id                    string
-	RedditFullname        string
-	RedditLinkUrl         string
-	RedditPostTitle       string
-	RedditPostCreatedAt   time.Time
-	S3ObjectKey           string
-	PresignedUrl          string
-	CreatedAt             string
-	FixtureId             int
-	ThumbnailS3Key        string
-	ThumbnailPresignedUrl string
+	Id                    string    `json:"id"`
+	RedditFullname        string    `json:"redditFullname"`
+	RedditLinkUrl         string    `json:"redditLinkUrl"`
+	RedditPostTitle       string    `json:"redditPostTitle"`
+	RedditPostCreatedAt   time.Time `json:"redditPostCreatedAt"`
+	CreatedAt             string    `json:"createdAt"`
+	FixtureId             int       `json:"fixtureId"`
+	S3ObjectKey           string    `json:"s3ObjectKey"`
+	PresignedUrl          string    `json:"presignedUrl"`
+	ThumbnailS3Key        string    `json:"thumbnailS3Key"`
+	ThumbnailPresignedUrl string    `json:"thumbnailPresignedUrl"`
 }
 
 type Config struct {

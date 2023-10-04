@@ -8,15 +8,15 @@ import (
 const teamsUrl = baseUrl + "teams"
 
 type Team struct {
-	Id        int
-	Name      string
-	Aliases   []string
-	Code      string
-	Country   string
-	Founded   int
-	National  bool
-	Logo      string
-	CreatedAt string
+	Id        int      `json:"id"`
+	Name      string   `json:"name"`
+	Aliases   []string `json:"aliases"`
+	Code      string   `json:"code"`
+	Country   string   `json:"country"`
+	Founded   int      `json:"founded"`
+	National  bool     `json:"national"`
+	Logo      string   `json:"logo"`
+	CreatedAt string   `json:"createdAt"`
 }
 
 func (client *Client) GetTeams(league, season int) ([]Team, error) {
