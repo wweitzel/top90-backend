@@ -82,22 +82,25 @@ func GetTeamForTeamName(teamName string, teams []apifootball.Team) (apifootball.
 
 func GetFixtureForTeamName(teamName string, aliases []string, fixtures []apifootball.Fixture) (apifootball.Fixture, error) {
 	var fixture apifootball.Fixture
+	var foundFixture bool
 
 	for _, f := range fixtures {
 		if f.Teams.Home.Name == teamName || f.Teams.Away.Name == teamName {
 			fixture = f
+			foundFixture = true
 			break
 		}
 
 		for _, alias := range aliases {
 			if f.Teams.Home.Name == alias || f.Teams.Away.Name == alias {
 				fixture = f
+				foundFixture = true
 				break
 			}
 		}
 	}
 
-	if (fixture == apifootball.Fixture{}) {
+	if !foundFixture {
 		return apifootball.Fixture{}, errors.New("could not determine fixture")
 	}
 

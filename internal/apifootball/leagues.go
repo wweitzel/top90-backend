@@ -5,11 +5,11 @@ import "errors"
 const leaguesUrl = baseUrl + "leagues"
 
 type League struct {
-	Id        int
-	Name      string
-	Type      string
-	Logo      string
-	CreatedAt string
+	Id        int    `json:"id"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Logo      string `json:"logo"`
+	CreatedAt string `json:"createdAt"`
 }
 
 func (client *Client) GetLeague(country, leagueName string) (League, error) {
