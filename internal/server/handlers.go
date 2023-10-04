@@ -1,19 +1,16 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/gorilla/mux"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/apifootball"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/scrape"
 )
 
 type ErrorResponse struct {
@@ -49,23 +46,16 @@ type GetTeamsResponse struct {
 	Teams []apifootball.Team `json:"teams"`
 }
 
-func GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
+func (s *Server) GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
 	var apiInfo GetApiInfoResponse
 	apiInfo.Message = "Welcome to the top90 API ⚽️ 🥅 "
 
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(apiInfo)
 	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
 
-func GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
+func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
 	leagueParam := queryParams.Get("leagueId")
@@ -74,7 +64,6 @@ func GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		json, _ := json.Marshal(ErrorResponse{Message: "Bad request. leagueId query param must be set."})
 		w.Write(json)
-		log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 		return
 	}
 
@@ -85,7 +74,7 @@ func GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 
 	filter := db.GetFixuresFilter{LeagueId: leagueId}
 
-	fixtures, err := dao.GetFixtures(filter)
+	fixtures, err := s.dao.GetFixtures(filter)
 	if err != nil {
 		log.Println(err)
 	}
@@ -97,13 +86,9 @@ func GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getFixturesResponse)
 	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
 
-func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
+func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
 	skip, _ := strconv.Atoi(queryParams.Get("skip"))
@@ -118,22 +103,22 @@ func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	teamId, _ := strconv.Atoi(queryParams.Get("teamId"))
 
 	filter := db.GetGoalsFilter{SearchTerm: search, LeagueId: leagueId, Season: season, TeamId: teamId}
-	count, err := dao.CountGoals(filter)
+	count, err := s.dao.CountGoals(filter)
 	if err != nil {
 		log.Println(err)
 	}
 
-	goals, err := dao.GetGoals(db.Pagination{Skip: skip, Limit: limit}, filter)
+	goals, err := s.dao.GetGoals(db.Pagination{Skip: skip, Limit: limit}, filter)
 	if err != nil {
 		log.Println(err)
 	}
 
 	for i := range goals {
-		videoUrl, err := s3Client.NewSignedGetURL(goals[i].S3ObjectKey, config.AwsBucketName, time.Minute*10)
+		videoUrl, err := s.s3Client.NewSignedGetURL(goals[i].S3ObjectKey, s.config.AwsBucketName, time.Minute*10)
 		if err != nil {
 			log.Println(err)
 		}
-		thumbnailUrl, err := s3Client.NewSignedGetURL(goals[i].ThumbnailS3Key, config.AwsBucketName, time.Minute*10)
+		thumbnailUrl, err := s.s3Client.NewSignedGetURL(goals[i].ThumbnailS3Key, s.config.AwsBucketName, time.Minute*10)
 		if err != nil {
 			log.Println(err)
 		}
@@ -150,26 +135,22 @@ func GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getGoalsResponse)
 	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
 
-func GetGoalHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
+func (s *Server) GetGoalHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	goal, err := dao.GetGoal(id)
+	goal, err := s.dao.GetGoal(id)
 	if err != nil {
 		log.Println(err)
 	}
 
 	// TODO: This is nearly duplicated with the code in getGoals
-	videoUrl, err := s3Client.NewSignedGetURL(goal.S3ObjectKey, config.AwsBucketName, time.Minute*1)
+	videoUrl, err := s.s3Client.NewSignedGetURL(goal.S3ObjectKey, s.config.AwsBucketName, time.Minute*1)
 	if err != nil {
 		log.Println(err)
 	}
-	thumbnailUrl, err := s3Client.NewSignedGetURL(goal.ThumbnailS3Key, config.AwsBucketName, time.Minute*10)
+	thumbnailUrl, err := s.s3Client.NewSignedGetURL(goal.ThumbnailS3Key, s.config.AwsBucketName, time.Minute*10)
 	if err != nil {
 		log.Println(err)
 	}
@@ -184,45 +165,10 @@ func GetGoalHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getGoalResponse)
 	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
 
-func GetGoalsCrawlHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
-	browserContext, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
-
-	scraper := scrape.Scraper{
-		BrowserContext: browserContext,
-	}
-
-	skip := 0
-	limit := 10
-	goals, err := dao.GetGoals(db.Pagination{Skip: skip, Limit: limit}, db.GetGoalsFilter{})
-	if err != nil {
-		log.Println(err)
-	}
-
-	for i := range goals {
-		log.Println(goals[i].RedditPostTitle)
-		goals[i].PresignedUrl = scraper.GetVideoSourceUrl(goals[i].RedditLinkUrl)
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	json, _ := json.Marshal(GetGoalsCrawlResponse{
-		Goals: goals,
-	})
-	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
-}
-
-func GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
-	leagues, err := dao.GetLeagues()
+func (s *Server) GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
+	leagues, err := s.dao.GetLeagues()
 	if err != nil {
 		log.Println(err)
 	}
@@ -234,13 +180,9 @@ func GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getLeaguesResponse)
 	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
 
-func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
+func (s *Server) GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
 	season, _ := strconv.Atoi(queryParams.Get("season"))
@@ -250,9 +192,9 @@ func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if searchTerm != "" {
-		teams, err = dao.GetTeams(db.GetTeamsFilter{SearchTerm: searchTerm})
+		teams, err = s.dao.GetTeams(db.GetTeamsFilter{SearchTerm: searchTerm})
 	} else {
-		teams, err = dao.GetTeamsForLeagueAndSeason(leagueId, season)
+		teams, err = s.dao.GetTeamsForLeagueAndSeason(leagueId, season)
 	}
 
 	if err != nil {
@@ -266,22 +208,18 @@ func GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	json, _ := json.Marshal(getTeamsResponse)
 	w.Write(json)
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
 
-func MessagePreviewHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	start := time.Now()
-
+func (s *Server) MessagePreviewHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	goal, _ := dao.GetGoal(id)
+	goal, _ := s.dao.GetGoal(id)
 
 	// TODO: This is nearly duplicated with the code in getGoals and getGoal
-	videoUrl, err := s3Client.NewSignedGetURL(goal.S3ObjectKey, config.AwsBucketName, time.Hour*24*7)
+	videoUrl, err := s.s3Client.NewSignedGetURL(goal.S3ObjectKey, s.config.AwsBucketName, time.Hour*24*7)
 	if err != nil {
 		log.Println(err)
 	}
-	thumbnailUrl, err := s3Client.NewSignedGetURL(goal.ThumbnailS3Key, config.AwsBucketName, time.Hour*24*7)
+	thumbnailUrl, err := s.s3Client.NewSignedGetURL(goal.ThumbnailS3Key, s.config.AwsBucketName, time.Hour*24*7)
 	if err != nil {
 		log.Println(err)
 	}
@@ -309,5 +247,4 @@ func MessagePreviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "text/html")
 	w.Write([]byte(html))
-	log.Printf("%s %s %v", r.Method, r.URL, time.Since(start))
 }
