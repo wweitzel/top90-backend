@@ -27,6 +27,37 @@ func TestGetGoals(t *testing.T) {
 
 	now := time.Now()
 	uuid := uuid.NewString()
+
+	team1, err := dao.InsertTeam(&apifootball.Team{
+		Id:   1,
+		Name: "team1",
+	})
+	assert.NilError(t, err)
+
+	team2, err := dao.InsertTeam(&apifootball.Team{
+		Id:   2,
+		Name: "team2",
+	})
+	assert.NilError(t, err)
+
+	league1, err := dao.InsertLeague(&apifootball.League{
+		Id:   1,
+		Name: "premier league",
+	})
+	assert.NilError(t, err)
+
+	fixture, err := dao.InsertFixture(&apifootball.Fixture{
+		Id:        1,
+		Referee:   "jimbob",
+		Timestamp: now.Unix(),
+		LeagueId:  league1.Id,
+		Teams: apifootball.Teams{
+			Home: apifootball.Team{Id: team1.Id},
+			Away: apifootball.Team{Id: team2.Id},
+		},
+	})
+	assert.NilError(t, err)
+
 	goal, _ := dao.InsertGoal(&top90.Goal{
 		RedditFullname:      uuid,
 		RedditLinkUrl:       "redditlinkurl",
@@ -34,6 +65,7 @@ func TestGetGoals(t *testing.T) {
 		S3ObjectKey:         "s3objectkey",
 		RedditPostCreatedAt: now,
 		ThumbnailS3Key:      "thumbnails3key",
+		FixtureId:           fixture.Id,
 	})
 
 	assertEqual(t, *goal, top90.Goal{
@@ -52,6 +84,12 @@ func TestGetGoals(t *testing.T) {
 
 	goals, _ := dao.GetGoals(Pagination{}, GetGoalsFilter{})
 	assert.Equal(t, len(goals), 1)
+
+	goals, _ = dao.GetGoals(Pagination{}, GetGoalsFilter{FixtureId: fixture.Id})
+	assert.Equal(t, len(goals), 1)
+
+	goals, _ = dao.GetGoals(Pagination{}, GetGoalsFilter{FixtureId: 9783246978987})
+	assert.Equal(t, len(goals), 0)
 }
 
 func TestGetFixtures(t *testing.T) {

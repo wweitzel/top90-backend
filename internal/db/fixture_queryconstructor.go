@@ -73,6 +73,47 @@ func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any)
 	return whereClause, args
 }
 
+func getFixtureQuery(id int) string {
+	whereClause := fmt.Sprintf("%s.%s = $1", tableNames.Fixtures, fixtureColumns.Id)
+	query := fmt.Sprintf(
+		`SELECT
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			%s,
+			home_teams.name as home_team_name,
+			home_teams.logo as home_team_logo,
+			away_teams.name as away_team_name,
+			away_teams.logo as away_team_logo
+			FROM %s
+		JOIN %s home_teams ON home_teams.%s=%s
+		JOIN %s away_teams ON away_teams.%s=%s
+		WHERE %s ORDER BY %s ASC`,
+		tableNames.Fixtures+"."+fixtureColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.Referee,
+		tableNames.Fixtures+"."+fixtureColumns.Date,
+		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		tableNames.Fixtures+"."+fixtureColumns.LeagueId,
+		tableNames.Fixtures+"."+fixtureColumns.Season,
+		tableNames.Fixtures+"."+fixtureColumns.CreatedAt,
+		tableNames.Fixtures,
+		tableNames.Teams,
+		teamColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
+		tableNames.Teams,
+		teamColumns.Id,
+		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
+		whereClause,
+		fixtureColumns.Date)
+
+	return query
+}
+
 func insertFixtureQuery(fixture *apifootball.Fixture) string {
 	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO UPDATE SET %s = $8 RETURNING *",
 		tableNames.Fixtures,

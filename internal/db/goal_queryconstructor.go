@@ -44,7 +44,7 @@ func getGoalsQuery(pagination Pagination, filter GetGoalsFilter) (string, []any)
 }
 
 func addGetGoalsJoinAndWhere(query string, args []any, filter GetGoalsFilter, variableCount *int) (string, []any) {
-	if filter.LeagueId != 0 || filter.Season != 0 || filter.TeamId != 0 {
+	if filter.LeagueId != 0 || filter.Season != 0 || filter.TeamId != 0 || filter.FixtureId != 0 {
 		// Join fixtures
 		query = query + fmt.Sprintf(" JOIN %s on %s.%s = %s.%s",
 			tableNames.Fixtures, tableNames.Goals, goalColumns.FixtureId, tableNames.Fixtures, fixtureColumns.Id)
@@ -72,6 +72,12 @@ func addGetGoalsJoinAndWhere(query string, args []any, filter GetGoalsFilter, va
 		*variableCount++
 		args = append(args, filter.TeamId)
 		args = append(args, filter.TeamId)
+	}
+
+	if filter.FixtureId != 0 {
+		*variableCount++
+		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.Id, *variableCount)
+		args = append(args, filter.FixtureId)
 	}
 
 	return query, args

@@ -25,6 +25,10 @@ type GetFixturesResponse struct {
 	Fixtures []apifootball.Fixture `json:"fixtures"`
 }
 
+type GetFixtureResponse struct {
+	Fixture apifootball.Fixture `json:"fixture"`
+}
+
 type GetGoalsResponse struct {
 	Goals []top90.Goal `json:"goals"`
 	Total int          `json:"total"`
@@ -99,6 +103,24 @@ func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) GetFixtureHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	fixtureId, err := strconv.Atoi(id)
+	if err != nil {
+		log.Println(err)
+	}
+
+	fixture, err := s.dao.GetFixture(fixtureId)
+	if err != nil {
+		log.Println(err)
+	}
+
+	respond(w, GetFixtureResponse{
+		Fixture: fixture,
+	})
+}
+
 func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
@@ -112,8 +134,9 @@ func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
 	season, _ := strconv.Atoi(queryParams.Get("season"))
 	teamId, _ := strconv.Atoi(queryParams.Get("teamId"))
+	fixtureId, _ := strconv.Atoi(queryParams.Get("fixtureId"))
 
-	filter := db.GetGoalsFilter{SearchTerm: search, LeagueId: leagueId, Season: season, TeamId: teamId}
+	filter := db.GetGoalsFilter{SearchTerm: search, LeagueId: leagueId, Season: season, TeamId: teamId, FixtureId: fixtureId}
 	count, err := s.dao.CountGoals(filter)
 	if err != nil {
 		log.Println(err)
