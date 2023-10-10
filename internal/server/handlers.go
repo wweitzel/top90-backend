@@ -56,20 +56,38 @@ func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
 	leagueParam := queryParams.Get("leagueId")
-	if leagueParam == "" {
+	todayOnlyParam := queryParams.Get("todayOnly")
+
+	todayOnly := false
+	var err error
+	if todayOnlyParam != "" {
+		todayOnly, err = strconv.ParseBool(todayOnlyParam)
+		if err != nil {
+			log.Panicf("Failed converting todayOnly query param to bool %v", err)
+		}
+	}
+
+	if leagueParam == "" && !todayOnly {
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(400)
-		json, _ := json.Marshal(ErrorResponse{Message: "Bad request. leagueId query param must be set."})
+		json, _ := json.Marshal(ErrorResponse{Message: "Bad request. leagueId query param must be set if todayOnly is not true."})
 		w.Write(json)
 		return
 	}
 
-	leagueId, err := strconv.Atoi(leagueParam)
-	if err != nil {
-		log.Panicf("Failed converting leagueId query param to int %v", err)
+	var filter db.GetFixuresFilter
+
+	if leagueParam != "" {
+		leagueId, err := strconv.Atoi(leagueParam)
+		if err != nil {
+			log.Panicf("Failed converting leagueId query param to int %v", err)
+		}
+		filter.LeagueId = leagueId
 	}
 
-	filter := db.GetFixuresFilter{LeagueId: leagueId}
+	if todayOnly {
+		filter.Date = time.Now()
+	}
 
 	fixtures, err := s.dao.GetFixtures(filter)
 	if err != nil {
