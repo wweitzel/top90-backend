@@ -11,6 +11,7 @@ import (
 type Top90DAO interface {
 	CountGoals(GetGoalsFilter) (int, error)
 	CountTeams() (int, error)
+	GetFixture(id int) (apifootball.Fixture, error)
 	GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error)
 	GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error)
 	GetGoal(id string) (top90.Goal, error)
@@ -40,6 +41,7 @@ type GetGoalsFilter struct {
 	LeagueId   int
 	Season     int
 	TeamId     int
+	FixtureId  int
 }
 
 type GetFixuresFilter struct {

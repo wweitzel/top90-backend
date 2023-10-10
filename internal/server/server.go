@@ -31,6 +31,7 @@ func NewServer(dao db.Top90DAO, s3Client s3.S3Client, config top90.Config) *Serv
 func (s *Server) routes() {
 	s.router.HandleFunc("/", s.GetApiInfoHandler)
 	s.router.HandleFunc("/fixtures", s.GetFixturesHandler)
+	s.router.HandleFunc("/fixtures/{id}", s.GetFixtureHandler)
 	s.router.HandleFunc("/goals", s.GetGoalsHandler)
 	s.router.HandleFunc("/goals/{id}", s.GetGoalHandler)
 	s.router.HandleFunc("/leagues", s.GetLeaguesHandler)

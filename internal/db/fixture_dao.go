@@ -41,6 +41,32 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 	return fixtures, nil
 }
 
+func (dao *PostgresDAO) GetFixture(id int) (apifootball.Fixture, error) {
+	query := getFixtureQuery(id)
+
+	var fixture apifootball.Fixture
+	row := dao.DB.QueryRow(query, id)
+
+	err := row.Scan(
+		&fixture.Id,
+		&fixture.Referee,
+		&fixture.Date,
+		&fixture.Teams.Home.Id,
+		&fixture.Teams.Away.Id,
+		&fixture.LeagueId,
+		&fixture.Season,
+		&fixture.CreatedAt,
+		&fixture.Teams.Home.Name,
+		&fixture.Teams.Home.Logo,
+		&fixture.Teams.Away.Name,
+		&fixture.Teams.Away.Logo)
+	if err != nil {
+		return fixture, err
+	}
+
+	return fixture, nil
+}
+
 func (dao *PostgresDAO) InsertFixture(fixture *apifootball.Fixture) (*apifootball.Fixture, error) {
 	query := insertFixtureQuery(fixture)
 
