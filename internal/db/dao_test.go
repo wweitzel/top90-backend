@@ -80,10 +80,29 @@ func TestGetFixtures(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
+	league2, err := dao.InsertLeague(&apifootball.League{
+		Id:   2,
+		Name: "la liga",
+	})
+	assert.NilError(t, err)
+
 	_, err = dao.InsertFixture(&apifootball.Fixture{
-		Referee:  "jimbob",
-		Date:     now,
-		LeagueId: league1.Id,
+		Id:        1,
+		Referee:   "jimbob",
+		Timestamp: now.Unix(),
+		LeagueId:  league1.Id,
+		Teams: apifootball.Teams{
+			Home: apifootball.Team{Id: team1.Id},
+			Away: apifootball.Team{Id: team2.Id},
+		},
+	})
+	assert.NilError(t, err)
+
+	_, err = dao.InsertFixture(&apifootball.Fixture{
+		Id:        2,
+		Referee:   "jimbob",
+		Timestamp: now.AddDate(0, 0, 2).Unix(),
+		LeagueId:  league2.Id,
 		Teams: apifootball.Teams{
 			Home: apifootball.Team{Id: team1.Id},
 			Away: apifootball.Team{Id: team2.Id},
@@ -92,6 +111,12 @@ func TestGetFixtures(t *testing.T) {
 	assert.NilError(t, err)
 
 	fixtures, _ := dao.GetFixtures(GetFixuresFilter{})
+	assert.Equal(t, len(fixtures), 2)
+
+	fixtures, _ = dao.GetFixtures(GetFixuresFilter{LeagueId: 1})
+	assert.Equal(t, len(fixtures), 1)
+
+	fixtures, _ = dao.GetFixtures(GetFixuresFilter{Date: time.Now()})
 	assert.Equal(t, len(fixtures), 1)
 }
 

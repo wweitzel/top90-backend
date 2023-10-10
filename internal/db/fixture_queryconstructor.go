@@ -63,8 +63,7 @@ func getFixturesWhereClause(filter GetFixuresFilter, args []any) (string, []any)
 		searchStartDate := filter.Date.Add(-12 * time.Hour)
 		searchEndtDate := filter.Date.Add(12 * time.Hour)
 
-		whereClause = whereClause + fmt.Sprintf(" AND %s >= $2 and %s <= $3",
-			tableNames.Fixtures+"."+fixtureColumns.Date,
+		whereClause = whereClause + fmt.Sprintf(" AND %s BETWEEN $2 AND $3",
 			tableNames.Fixtures+"."+fixtureColumns.Date,
 		)
 		args = append(args, searchStartDate)
