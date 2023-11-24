@@ -179,25 +179,18 @@ func (poller *GoalIngest) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 		RedditLinkUrl:       post.Data.URL,
 	}
 
-	firstTeamNameFromPost, _ := GetTeamName(post.Data.Title)
-
-	teams, err1 := poller.dao.GetTeams(db.GetTeamsFilter{})
+	allTeams, err1 := poller.dao.GetTeams(db.GetTeamsFilter{})
 	if err1 != nil {
 		log.Println("error: could not get teams from db")
 	}
 
-	team, err2 := GetTeamForTeamName(firstTeamNameFromPost, teams)
-	if err2 != nil {
-		log.Printf("team name %s could not be found in db", firstTeamNameFromPost)
-	}
-
 	// Try to link the fixture
-	if err1 == nil && err2 == nil {
+	if err1 == nil {
 		fixtures, _ := poller.dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
-		fixture, err := GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
+		fixture, err := FindFixture(post.Data.Title, allTeams, fixtures)
 
 		if err != nil {
-			log.Println("warning:", "no fixture for", team.Name, "on date", goal.RedditPostCreatedAt)
+			log.Println("warning:", "no fixture for", post.Data.Title, "on date", goal.RedditPostCreatedAt)
 		} else {
 			goal.FixtureId = fixture.Id
 		}

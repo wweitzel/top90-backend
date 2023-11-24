@@ -23,64 +23,44 @@ func main() {
 	dao := db.NewPostgresDAO(DB)
 
 	allTeams, err := dao.GetTeams(db.GetTeamsFilter{})
+	terminateIfError(err)
+
 	allGoals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 100000}, db.GetGoalsFilter{})
+	terminateIfError(err)
 
-	if err != nil {
-		log.Fatalf("Failed %v", err)
-	}
-
-	noTeamFound := 0
-	foundFixture := 0
-	couldNotDetermineTeamName := 0
-	couldNotDetermineFixture := 0
+	successCount := 0
 
 	for _, goal := range allGoals {
-		firstTeamNameFromPost, err := ingest.GetTeamName(goal.RedditPostTitle)
-		if err != nil {
-			couldNotDetermineTeamName++
-			continue
-		}
-
-		team, err := ingest.GetTeamForTeamName(firstTeamNameFromPost, allTeams)
-		if err != nil {
-			noTeamFound++
+		if goal.FixtureId != 0 {
+			log.Println("Already determined fixture")
 			continue
 		}
 
 		fixtures, err := dao.GetFixtures(db.GetFixuresFilter{Date: goal.RedditPostCreatedAt})
+		terminateIfError(err)
+
+		fixture, err := ingest.FindFixture(goal.RedditPostTitle, allTeams, fixtures)
 		if err != nil {
-			log.Fatalln(err)
+			log.Printf("%v", err)
 			continue
 		}
 
-		fixture, err := ingest.GetFixtureForTeamName(firstTeamNameFromPost, team.Aliases, fixtures)
-		if err != nil {
-			couldNotDetermineFixture++
-			continue
-		}
+		_, err = dao.UpdateGoal(goal.Id, top90.Goal{FixtureId: fixture.Id})
+		terminateIfError(err)
 
-		foundFixture++
-
-		log.Println(fixture.LeagueId)
 		log.Println("-------------------------------------------------------------------------------------")
 		log.Println(goal.RedditPostTitle)
-
-		if goal.FixtureId == 0 {
-			_, err := dao.UpdateGoal(goal.Id, top90.Goal{FixtureId: fixture.Id})
-			if err != nil {
-				log.Fatalln(err)
-			} else {
-				log.Println("Success!")
-			}
-		} else {
-			log.Println("Already determined fixture")
-		}
-
+		log.Println("Success!")
+		successCount++
 	}
 
 	log.Println("=====================================================================================")
 	log.Println("Processed: ", len(allGoals))
-	log.Println("No Team Found:", noTeamFound)
-	log.Println("Total Could not determine Fixtures:", couldNotDetermineFixture)
-	log.Println("Total Found World Cup Fixtures:", foundFixture)
+	log.Println("Successes: ", successCount)
+}
+
+func terminateIfError(err error) {
+	if err != nil {
+		log.Fatalf("Failed %v", err)
+	}
 }
