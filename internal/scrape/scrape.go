@@ -103,6 +103,7 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 	log.Printf("New tab: %s", url)
 
 	var videoNodes []*cdp.Node
+	var sourceNodes []*cdp.Node
 
 	err := chromedp.Run(newTabCtx,
 		chromedp.Navigate(url),
@@ -112,7 +113,8 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 			log.Printf(">>>>>>>>>>>>>>>>>>>> video IS VISIBLE")
 			return nil
 		}),
-		chromedp.Nodes(`source`, &videoNodes, chromedp.ByQuery),
+		chromedp.Nodes(`video`, &videoNodes, chromedp.AtLeast(0)),
+		chromedp.Nodes(`source`, &sourceNodes, chromedp.AtLeast(0)),
 	)
 	if err != nil {
 		log.Printf("%v %s", err, url)
@@ -120,15 +122,35 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 		log.Println("chromedp did NOT timeout!")
 	}
 
-	for _, videoNode := range videoNodes {
-		sourceUrl = videoNode.AttributeValue("src")
-		// Sometimes streamff sources are a relative path
-		if strings.HasPrefix(url, "https://streamff") && strings.HasPrefix(sourceUrl, "/uploads") {
-			sourceUrl = "https://streamff.com" + sourceUrl
+	if len(videoNodes) > 0 {
+		for _, videoNode := range videoNodes {
+			sourceUrl = getSource(videoNode, url)
+			if len(sourceUrl) > 0 {
+				return sourceUrl
+			}
 		}
-		if len(sourceUrl) > 0 {
-			return sourceUrl
+	}
+
+	if len(sourceNodes) > 0 {
+		for _, sourceNode := range sourceNodes {
+			sourceUrl = getSource(sourceNode, url)
+			if len(sourceUrl) > 0 {
+				return sourceUrl
+			}
 		}
+	}
+
+	return ""
+}
+
+func getSource(node *cdp.Node, url string) string {
+	sourceUrl := node.AttributeValue("src")
+	// Sometimes streamff sources are a relative path
+	if strings.HasPrefix(url, "https://streamff") && strings.HasPrefix(sourceUrl, "/uploads") {
+		sourceUrl = "https://streamff.com" + sourceUrl
+	}
+	if len(sourceUrl) > 0 {
+		return sourceUrl
 	}
 
 	return ""

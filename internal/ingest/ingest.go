@@ -75,7 +75,7 @@ func NewGoalIngest(config top90.Config) GoalIngest {
 
 func (poller *GoalIngest) Run() {
 	posts := poller.getNewRedditPosts()
-	poller.ingestPosts(posts)
+	poller.IngestPosts(posts)
 	poller.db.Close()
 	poller.execCancel()
 	poller.contextCancel()
@@ -97,7 +97,7 @@ func (poller *GoalIngest) getNewRedditPosts() []reddit.RedditPost {
 	return poller.redditclient.GetNewPosts(startEpoch)
 }
 
-func (poller *GoalIngest) ingestPosts(posts []reddit.RedditPost) {
+func (poller *GoalIngest) IngestPosts(posts []reddit.RedditPost) {
 	var wg sync.WaitGroup
 
 	wg.Add(len(posts))
