@@ -196,6 +196,11 @@ func (poller *GoalIngest) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 		}
 	}
 
+	// Due to cost concerns, we will not store goals unless we can link it to a fixture.
+	if err1 != nil || goal.FixtureId == 0 {
+		return
+	}
+
 	err = poller.insertAndUpload(goal, videoFile.Name(), thumbnailFilename)
 	if err == sql.ErrNoRows {
 		log.Printf("Already stored goal for fullname %s", redditFullName)
