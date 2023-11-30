@@ -43,7 +43,7 @@ build-apifootball-ingest-linux:
 	cd cmd/apifootball_ingest && GOOS=linux GOARCH=amd64 go build -o ../../bin/apifootball_ingest_linux
 
 deploy-apifootball-ingest: build-apifootball-ingest-linux
-	scp -i keys/defaultec2.pem bin/apifootball_ingest_linux ec2-user@ec2-54-80-253-48.compute-1.amazonaws.com:~/.
+	scp -i keys/defaultec2.pem bin/apifootball_ingest_linux ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com:~/.
 
 # misc -----------------------------------------------------------------------------------------------------------
 clean:
