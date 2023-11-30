@@ -34,8 +34,8 @@ jobs:
           touch keys/defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker image prune -f
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-35-171-182-157.compute-1.amazonaws.com docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-35-171-182-157.compute-1.amazonaws.com docker image prune -f
 
   server:
     runs-on: ubuntu-latest
@@ -68,11 +68,11 @@ jobs:
           touch .env
           echo "${{ secrets.TOP90_ENV_FILE_PROD }}" | tr -d '\r' > .env
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90
         
       - name: Restart server
         run: |
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker stop top90-server || true
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker container prune -f
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker run --env-file .env -p 7171:7171 -d --restart unless-stopped --name top90-server wweitzel/top90
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-198-10-153.compute-1.amazonaws.com docker image prune -f
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker stop top90-server || true
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker container prune -f
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker run --env-file .env -p 7171:7171 -d --restart unless-stopped --name top90-server wweitzel/top90
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker image prune -f
