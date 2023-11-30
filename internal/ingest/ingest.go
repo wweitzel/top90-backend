@@ -17,6 +17,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/apifootball"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/reddit"
 	"github.com/wweitzel/top90/internal/s3"
@@ -120,6 +121,29 @@ func (poller *GoalIngest) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 		return
 	}
 
+	allTeams, err1 := poller.dao.GetTeams(db.GetTeamsFilter{})
+	if err1 != nil {
+		log.Println("error: could not get teams from db")
+		return
+	}
+
+	createdAt := convertRedditCreatedAtToTime(post)
+
+	var fixture apifootball.Fixture
+	var fixtureErr error
+
+	// Try to link the fixture
+	if err1 == nil {
+		fixtures, _ := poller.dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
+		fixture, fixtureErr = FindFixture(post.Data.Title, allTeams, fixtures)
+	}
+
+	// Due to cost concerns, we will not store goals unless we can link it to a fixture.
+	if fixtureErr != nil || fixture.Id == 0 {
+		log.Println("warning:", "no fixture for", post.Data.Title, "on date", createdAt)
+		return
+	}
+
 	sourceUrl := poller.getSourceUrl(post)
 	log.Println("final source url: ", "[", sourceUrl, "]")
 
@@ -170,35 +194,13 @@ func (poller *GoalIngest) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
 
 	// Insert goal into db and upload the mp4 file to s3
 	redditFullName := post.Kind + "_" + post.Data.Id
-	createdAt := convertRedditCreatedAtToTime(post)
 
 	goal := top90.Goal{
 		RedditFullname:      redditFullName,
 		RedditPostCreatedAt: createdAt,
 		RedditPostTitle:     post.Data.Title,
 		RedditLinkUrl:       post.Data.URL,
-	}
-
-	allTeams, err1 := poller.dao.GetTeams(db.GetTeamsFilter{})
-	if err1 != nil {
-		log.Println("error: could not get teams from db")
-	}
-
-	// Try to link the fixture
-	if err1 == nil {
-		fixtures, _ := poller.dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
-		fixture, err := FindFixture(post.Data.Title, allTeams, fixtures)
-
-		if err != nil {
-			log.Println("warning:", "no fixture for", post.Data.Title, "on date", goal.RedditPostCreatedAt)
-		} else {
-			goal.FixtureId = fixture.Id
-		}
-	}
-
-	// Due to cost concerns, we will not store goals unless we can link it to a fixture.
-	if err1 != nil || goal.FixtureId == 0 {
-		return
+		FixtureId:           fixture.Id,
 	}
 
 	err = poller.insertAndUpload(goal, videoFile.Name(), thumbnailFilename)
