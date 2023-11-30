@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -99,21 +98,12 @@ func (poller *GoalIngest) getNewRedditPosts() []reddit.RedditPost {
 }
 
 func (poller *GoalIngest) IngestPosts(posts []reddit.RedditPost) {
-	var wg sync.WaitGroup
-
-	wg.Add(len(posts))
-
 	for _, post := range posts {
-		// Sleep here prevents getting rate limited
-		time.Sleep(200 * time.Millisecond)
-		go poller.ingest(&wg, post)
+		poller.ingest(post)
 	}
-
-	wg.Wait()
 }
 
-func (poller *GoalIngest) ingest(wg *sync.WaitGroup, post reddit.RedditPost) {
-	defer wg.Done()
+func (poller *GoalIngest) ingest(post reddit.RedditPost) {
 	log.Println("\nprocessing...", post.Data.Id)
 
 	if len(post.Data.Title) > 110 {
