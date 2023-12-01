@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -25,6 +27,11 @@ type GetFixturesResponse struct {
 	Fixtures []apifootball.Fixture `json:"fixtures"`
 }
 
+type GetFixturesRequest struct {
+	LeagueId  int  `json:"leagueId"`
+	TodayOnly bool `json:"todayOnly"`
+}
+
 type GetFixtureResponse struct {
 	Fixture apifootball.Fixture `json:"fixture"`
 }
@@ -32,6 +39,11 @@ type GetFixtureResponse struct {
 type GetGoalsResponse struct {
 	Goals []top90.Goal `json:"goals"`
 	Total int          `json:"total"`
+}
+
+type GetGoalsRequest struct {
+	Pagination db.Pagination     `json:"pagination"`
+	Filter     db.GetGoalsFilter `json:"filter"`
 }
 
 type GetGoalResponse struct {
@@ -46,6 +58,12 @@ type GetLeaguesResponse struct {
 	Leagues []apifootball.League `json:"leagues"`
 }
 
+type GetTeamsRequest struct {
+	LeagueId   int    `json:"leagueId"`
+	Season     int    `json:"season"`
+	SearchTerm string `json:"searchTerm"`
+}
+
 type GetTeamsResponse struct {
 	Teams []apifootball.Team `json:"teams"`
 }
@@ -53,43 +71,28 @@ type GetTeamsResponse struct {
 func (s *Server) GetApiInfoHandler(w http.ResponseWriter, r *http.Request) {
 	var apiInfo GetApiInfoResponse
 	apiInfo.Message = "Welcome to the top90 API ⚽️ 🥅 "
-	respond(w, apiInfo)
+	respond(w, http.StatusOK, apiInfo)
 }
 
 func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
+	json := queryParams.Get("json")
 
-	leagueParam := queryParams.Get("leagueId")
-	todayOnlyParam := queryParams.Get("todayOnly")
-
-	todayOnly := false
-	var err error
-	if todayOnlyParam != "" {
-		todayOnly, err = strconv.ParseBool(todayOnlyParam)
-		if err != nil {
-			log.Panicf("Failed converting todayOnly query param to bool %v", err)
-		}
+	request, err := unmarshal[GetFixturesRequest](json)
+	if err != nil {
+		respond(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
 	}
 
-	if leagueParam == "" && !todayOnly {
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(400)
-		json, _ := json.Marshal(ErrorResponse{Message: "Bad request. leagueId query param must be set if todayOnly is not true."})
-		w.Write(json)
+	if request.LeagueId == 0 && !request.TodayOnly {
+		respond(w, http.StatusBadRequest, ErrorResponse{Message: "Bad request. leagueId query param must be set if todayOnly is not true."})
 		return
 	}
 
 	var filter db.GetFixuresFilter
+	filter.LeagueId = request.LeagueId
 
-	if leagueParam != "" {
-		leagueId, err := strconv.Atoi(leagueParam)
-		if err != nil {
-			log.Panicf("Failed converting leagueId query param to int %v", err)
-		}
-		filter.LeagueId = leagueId
-	}
-
-	if todayOnly {
+	if request.TodayOnly {
 		filter.Date = time.Now()
 	}
 
@@ -98,7 +101,7 @@ func (s *Server) GetFixturesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	respond(w, GetFixturesResponse{
+	respond(w, http.StatusOK, GetFixturesResponse{
 		Fixtures: fixtures,
 	})
 }
@@ -116,33 +119,31 @@ func (s *Server) GetFixtureHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	respond(w, GetFixtureResponse{
+	respond(w, http.StatusOK, GetFixtureResponse{
 		Fixture: fixture,
 	})
 }
 
 func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
+	json := queryParams.Get("json")
 
-	skip, _ := strconv.Atoi(queryParams.Get("skip"))
-	limit, err := strconv.Atoi(queryParams.Get("limit"))
+	request, err := unmarshal[GetGoalsRequest](json)
 	if err != nil {
-		limit = 10
+		respond(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
 	}
 
-	search := queryParams.Get("search")
-	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
-	season, _ := strconv.Atoi(queryParams.Get("season"))
-	teamId, _ := strconv.Atoi(queryParams.Get("teamId"))
-	fixtureId, _ := strconv.Atoi(queryParams.Get("fixtureId"))
+	if request.Pagination.Limit == 0 {
+		request.Pagination.Limit = 10
+	}
 
-	filter := db.GetGoalsFilter{SearchTerm: search, LeagueId: leagueId, Season: season, TeamId: teamId, FixtureId: fixtureId}
-	count, err := s.dao.CountGoals(filter)
+	count, err := s.dao.CountGoals(request.Filter)
 	if err != nil {
 		log.Println(err)
 	}
 
-	goals, err := s.dao.GetGoals(db.Pagination{Skip: skip, Limit: limit}, filter)
+	goals, err := s.dao.GetGoals(request.Pagination, request.Filter)
 	if err != nil {
 		log.Println(err)
 	}
@@ -152,7 +153,7 @@ func (s *Server) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 		goals[i].ThumbnailPresignedUrl = s.presignedUrl(goals[i].ThumbnailS3Key)
 	}
 
-	respond(w, GetGoalsResponse{
+	respond(w, http.StatusOK, GetGoalsResponse{
 		Goals: goals,
 		Total: count,
 	})
@@ -169,7 +170,7 @@ func (s *Server) GetGoalHandler(w http.ResponseWriter, r *http.Request) {
 	goal.PresignedUrl = s.presignedUrl(goal.S3ObjectKey)
 	goal.ThumbnailPresignedUrl = s.presignedUrl(goal.ThumbnailS3Key)
 
-	respond(w, GetGoalResponse{
+	respond(w, http.StatusOK, GetGoalResponse{
 		Goal: goal,
 	})
 }
@@ -180,31 +181,33 @@ func (s *Server) GetLeaguesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	respond(w, GetLeaguesResponse{
+	respond(w, http.StatusOK, GetLeaguesResponse{
 		Leagues: leagues,
 	})
 }
 
 func (s *Server) GetTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
-	leagueId, _ := strconv.Atoi(queryParams.Get("leagueId"))
-	season, _ := strconv.Atoi(queryParams.Get("season"))
-	searchTerm := queryParams.Get("searchTerm")
+	json := queryParams.Get("json")
+
+	request, err := unmarshal[GetTeamsRequest](json)
+	if err != nil {
+		respond(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
 
 	var teams []apifootball.Team
-	var err error
-
-	if searchTerm != "" {
-		teams, err = s.dao.GetTeams(db.GetTeamsFilter{SearchTerm: searchTerm})
+	if request.SearchTerm != "" {
+		teams, err = s.dao.GetTeams(db.GetTeamsFilter{SearchTerm: request.SearchTerm})
 	} else {
-		teams, err = s.dao.GetTeamsForLeagueAndSeason(leagueId, season)
+		teams, err = s.dao.GetTeamsForLeagueAndSeason(request.LeagueId, request.Season)
 	}
 
 	if err != nil {
 		log.Println(err)
 	}
 
-	respond(w, GetTeamsResponse{
+	respond(w, http.StatusOK, GetTeamsResponse{
 		Teams: teams,
 	})
 }
@@ -256,8 +259,25 @@ func (s *Server) presignedUrl(objectKey string) string {
 	return url
 }
 
-func respond(w http.ResponseWriter, response any) {
+func respond(w http.ResponseWriter, statusCode int, response any) {
 	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	json, _ := json.Marshal(response)
 	w.Write(json)
+}
+
+func unmarshal[T any](jsonStr string) (*T, error) {
+	out := new(T)
+
+	decodedJson, err := url.QueryUnescape(jsonStr)
+	if err != nil {
+		return nil, errors.New("error decoding json")
+	}
+
+	err = json.Unmarshal([]byte(decodedJson), &out)
+	if err != nil {
+		return nil, errors.New("error unmarshalling json")
+	}
+
+	return out, nil
 }
