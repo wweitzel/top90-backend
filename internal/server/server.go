@@ -8,6 +8,7 @@ import (
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/s3"
+	"github.com/wweitzel/top90/internal/server/handlers"
 )
 
 type Server struct {
@@ -29,14 +30,25 @@ func NewServer(dao db.Top90DAO, s3Client s3.S3Client, config top90.Config) *Serv
 }
 
 func (s *Server) routes() {
-	s.router.HandleFunc("/", s.GetApiInfoHandler)
-	s.router.HandleFunc("/fixtures", s.GetFixturesHandler)
-	s.router.HandleFunc("/fixtures/{id}", s.GetFixtureHandler)
-	s.router.HandleFunc("/goals", s.GetGoalsHandler)
-	s.router.HandleFunc("/goals/{id}", s.GetGoalHandler)
-	s.router.HandleFunc("/leagues", s.GetLeaguesHandler)
-	s.router.HandleFunc("/teams", s.GetTeamsHandler)
-	s.router.HandleFunc("/message_preview/{id}", s.MessagePreviewHandler)
+	welcomeHandler := handlers.WelcomeHandler{}
+	fixturesHandler := handlers.NewFixtureHandler(s.dao)
+	goalHandler := handlers.NewGoalHandler(s.dao, s.s3Client, s.config.AwsBucketName)
+	leagueHandler := handlers.NewLeagueHandler(s.dao)
+	messageHandler := handlers.NewMessageHandler(s.dao, s.s3Client, s.config.AwsBucketName)
+	teamsHandler := handlers.NewTeamHandler(s.dao)
+
+	s.router.HandleFunc("/", welcomeHandler.GetWelcome)
+	s.router.HandleFunc("/fixtures", fixturesHandler.GetFixtures)
+	s.router.HandleFunc("/fixtures/{id}", fixturesHandler.GetFixture)
+	s.router.HandleFunc("/goals", goalHandler.GetGoals)
+	s.router.HandleFunc("/goals/{id}", goalHandler.GetGoal)
+	s.router.HandleFunc("/leagues", leagueHandler.GetLeagues)
+	s.router.HandleFunc("/message_preview/{id}", messageHandler.GetPreview)
+	s.router.HandleFunc("/teams", teamsHandler.GetTeams)
+}
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

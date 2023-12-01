@@ -66,11 +66,11 @@ func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {
 }
 
 // Call s3.HeadBucket to verify top90 bucket exists and we have permission to view it
-func (client *S3Client) VerifyConnection(bucketName string) error {
+func (c *S3Client) VerifyConnection(bucketName string) error {
 	input := &s3.HeadBucketInput{
 		Bucket: aws.String(bucketName),
 	}
-	_, err := client.s3.HeadBucket(input)
+	_, err := c.s3.HeadBucket(input)
 	if err != nil {
 		return err
 	}
@@ -78,8 +78,8 @@ func (client *S3Client) VerifyConnection(bucketName string) error {
 }
 
 // Upload a file to s3
-func (client *S3Client) UploadFile(fileName string, key string, contentType string, bucketName string) error {
-	uploader := s3manager.NewUploader(client.session)
+func (c *S3Client) UploadFile(fileName string, key string, contentType string, bucketName string) error {
+	uploader := s3manager.NewUploader(c.session)
 
 	fileBytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -102,8 +102,8 @@ func (client *S3Client) UploadFile(fileName string, key string, contentType stri
 }
 
 // Download a file from s3
-func (client *S3Client) DownloadFile(key, bucket, outputFilename string) {
-	downloader := s3manager.NewDownloader(client.session)
+func (c *S3Client) DownloadFile(key, bucket, outputFilename string) {
+	downloader := s3manager.NewDownloader(c.session)
 
 	file, err := os.Create(outputFilename)
 	if err != nil {
@@ -124,8 +124,8 @@ func (client *S3Client) DownloadFile(key, bucket, outputFilename string) {
 	log.Println("Downloaded", file.Name(), numBytes, "bytes")
 }
 
-func (client *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, error) {
-	downloader := s3manager.NewDownloader(client.session)
+func (c *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, error) {
+	downloader := s3manager.NewDownloader(c.session)
 
 	buf := aws.NewWriteAtBuffer([]byte{})
 	numBytes, err := downloader.Download(buf, &s3.GetObjectInput{
@@ -143,8 +143,8 @@ func (client *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, er
 }
 
 // Delete a file on s3
-func (client *S3Client) DeleteFile(key string, bucketName string) error {
-	_, err := client.s3.DeleteObject(&s3.DeleteObjectInput{
+func (c *S3Client) DeleteFile(key string, bucketName string) error {
+	_, err := c.s3.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(key),
 	})
@@ -155,8 +155,8 @@ func (client *S3Client) DeleteFile(key string, bucketName string) error {
 }
 
 // Create a presigned download url with an expiration time
-func (client *S3Client) NewSignedGetURL(key string, bucket string, expire time.Duration) (string, error) {
-	req, _ := client.s3.GetObjectRequest(&s3.GetObjectInput{
+func (c *S3Client) NewSignedGetURL(key string, bucket string, expire time.Duration) (string, error) {
+	req, _ := c.s3.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
@@ -169,4 +169,12 @@ func (client *S3Client) NewSignedGetURL(key string, bucket string, expire time.D
 	// When running in docker locally, host.docker.internal will be in the url
 	result := strings.Replace(url, "host.docker.internal", "localhost", -1)
 	return result, nil
+}
+
+func (c *S3Client) PresignedUrl(objectKey string, bucket string) string {
+	url, err := c.NewSignedGetURL(objectKey, bucket, time.Minute*10)
+	if err != nil {
+		log.Println(err)
+	}
+	return url
 }
