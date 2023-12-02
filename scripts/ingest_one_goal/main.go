@@ -3,16 +3,16 @@ package main
 import (
 	"log"
 
-	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/ingest"
-	"github.com/wweitzel/top90/internal/reddit"
+	"github.com/wweitzel/top90/internal/clients/reddit"
+	"github.com/wweitzel/top90/internal/config"
+	"github.com/wweitzel/top90/internal/scrape"
 )
 
 func main() {
 	log.Println("Starting Run...")
 
-	config := top90.LoadConfig()
-	goalIngest := ingest.NewGoalIngest(config)
+	config := config.Load()
+	goalIngest := scrape.NewGoalIngest(config)
 
 	post := reddit.RedditPost{
 		Data: struct {
@@ -22,7 +22,7 @@ func main() {
 			Id                   string
 			Link_flair_css_class string
 		}{
-			URL: "https://dubz.co/v/gkkyv5",
+			URL: "https://www.ole.com.ar/futbol-primera/colon-vs-gimansia-hoy-vivo-desempate-descenso-categoria-hora-ver-resumen_0_BIf8pOsDCf.html",
 		}}
 
 	var posts []reddit.RedditPost

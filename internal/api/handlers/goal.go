@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/s3"
 )
 
 type GetGoalResponse struct {

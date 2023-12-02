@@ -1,24 +1,24 @@
-package server
+package api
 
 import (
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/api/handlers"
+	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/s3"
-	"github.com/wweitzel/top90/internal/server/handlers"
 )
 
 type Server struct {
 	dao      db.Top90DAO
 	s3Client s3.S3Client
 	router   *mux.Router
-	config   top90.Config
+	config   config.Config
 }
 
-func NewServer(dao db.Top90DAO, s3Client s3.S3Client, config top90.Config) *Server {
+func NewServer(dao db.Top90DAO, s3Client s3.S3Client, config config.Config) *Server {
 	s := &Server{
 		dao:      dao,
 		s3Client: s3Client,

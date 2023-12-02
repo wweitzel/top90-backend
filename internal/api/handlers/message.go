@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/s3"
 )
 
 type MessageHandler struct {

@@ -7,8 +7,9 @@ import (
 	"os/exec"
 
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/s3"
 )
 
 var dao db.Top90DAO
@@ -17,7 +18,7 @@ var s3Client s3.S3Client
 func main() {
 	log.SetFlags(log.Ltime)
 
-	config := top90.LoadConfig(".env.production.local")
+	config := config.Load(".env.production.local")
 
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
 	if err != nil {

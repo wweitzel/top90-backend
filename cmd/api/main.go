@@ -4,14 +4,14 @@ import (
 	"log"
 	"net/http"
 
-	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/api"
+	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/s3"
-	"github.com/wweitzel/top90/internal/server"
 )
 
 func main() {
-	config := top90.LoadConfig()
+	config := config.Load()
 
 	s3Client := initS3Client(
 		config.AwsAccessKey,
@@ -25,7 +25,7 @@ func main() {
 		config.DbHost,
 		config.DbPort)
 
-	s := server.NewServer(
+	s := api.NewServer(
 		dao,
 		s3Client,
 		config)

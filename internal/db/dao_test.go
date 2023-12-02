@@ -7,7 +7,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
 	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"gotest.tools/v3/assert"
 )
 

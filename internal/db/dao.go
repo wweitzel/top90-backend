@@ -5,7 +5,7 @@ import (
 	"time"
 
 	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 )
 
 type Top90DAO interface {

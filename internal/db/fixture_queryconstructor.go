@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 )
 
 func getFixturesQuery(filter GetFixuresFilter) (string, []any) {

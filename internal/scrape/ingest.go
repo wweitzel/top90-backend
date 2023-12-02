@@ -1,4 +1,4 @@
-package ingest
+package scrape
 
 import (
 	"context"
@@ -16,25 +16,25 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/clients/reddit"
+	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/reddit"
-	"github.com/wweitzel/top90/internal/s3"
-	"github.com/wweitzel/top90/internal/scrape"
 )
 
 type GoalIngest struct {
 	dao           db.Top90DAO
 	s3client      *s3.S3Client
 	redditclient  *reddit.RedditClient
-	scraper       *scrape.Scraper
+	scraper       *Scraper
 	bucketName    string
 	db            *sql.DB
 	execCancel    context.CancelFunc
 	contextCancel context.CancelFunc
 }
 
-func NewGoalIngest(config top90.Config) GoalIngest {
+func NewGoalIngest(config config.Config) GoalIngest {
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
 	if err != nil {
 		log.Fatalf("Could not setup database: %v", err)
@@ -58,7 +58,7 @@ func NewGoalIngest(config top90.Config) GoalIngest {
 	}
 
 	redditClient := reddit.NewRedditClient(&http.Client{Timeout: time.Second * 10})
-	scraper := scrape.Scraper{BrowserContext: ctx}
+	scraper := Scraper{BrowserContext: ctx}
 	dao := db.NewPostgresDAO(DB)
 
 	return GoalIngest{

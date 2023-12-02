@@ -2,7 +2,6 @@ package reddit
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -71,12 +70,4 @@ func (client *RedditClient) GetComment(commentId string) RedditComment {
 	}
 
 	return RedditComment{}
-}
-
-// TODO: Probably a better way to handle this
-func handleUnmarshallError(err error) {
-	expectedJsonError := "json: cannot unmarshal string into Go struct field .Data.Children.Data.Replies of type reddit.RedditRepliesResponse"
-	if err != nil && fmt.Sprintf("%vw", err) != expectedJsonError {
-		log.Println(err)
-	}
 }
