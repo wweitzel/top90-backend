@@ -37,7 +37,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-35-171-182-157.compute-1.amazonaws.com docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-35-171-182-157.compute-1.amazonaws.com docker image prune -f
 
-  server:
+  api:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -70,7 +70,7 @@ jobs:
           chmod 400 keys/defaultec2.pem
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90
         
-      - name: Restart server
+      - name: Restart API
         run: |
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker stop top90-server || true
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com docker container prune -f
