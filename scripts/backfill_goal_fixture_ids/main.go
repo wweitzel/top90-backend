@@ -4,14 +4,15 @@ import (
 	"log"
 
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/ingest"
+	"github.com/wweitzel/top90/internal/scrape"
 )
 
 func main() {
 	log.SetFlags(log.Ltime)
 
-	config := top90.LoadConfig()
+	config := config.Load()
 
 	// Setup database
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
@@ -39,7 +40,7 @@ func main() {
 		fixtures, err := dao.GetFixtures(db.GetFixuresFilter{Date: goal.RedditPostCreatedAt})
 		terminateIfError(err)
 
-		fixture, err := ingest.FindFixture(goal.RedditPostTitle, allTeams, fixtures)
+		fixture, err := scrape.FindFixture(goal.RedditPostTitle, allTeams, fixtures)
 		if err != nil {
 			log.Printf("%v", err)
 			continue

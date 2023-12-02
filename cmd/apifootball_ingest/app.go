@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
 )
 
@@ -19,7 +19,7 @@ type App struct {
 
 func loadApp() (app App, conn *sql.DB) {
 	// Load config from .env into environment variables
-	config := top90.LoadConfig()
+	config := config.Load()
 
 	// Connect to database
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)

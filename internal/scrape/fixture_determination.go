@@ -1,10 +1,10 @@
-package ingest
+package scrape
 
 import (
 	"errors"
 	"strings"
 
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 )
 
 func findTeams(redditPostTile string, teams []apifootball.Team) []apifootball.Team {

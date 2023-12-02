@@ -20,20 +20,20 @@ build-poller-linux:
 	cd cmd/poller && GOOS=linux GOARCH=amd64 go build -o ../../bin/goal_poller_linux
 	docker build -f Dockerfile.poller --platform=linux/amd64 -t top90-poller-v${APP_VERSION} .
 
-# server ---------------------------------------------------------------------------------------------------------
-run-server:
-	go run ./cmd/server/...
+# api ------------------------------------------------------------------------------------------------------------
+run-api:
+	go run ./cmd/api/...
 
-run-server-docker:
-	docker run --rm -p 7171:7171 --env-file .env.docker top90-server-v0.1
+run-api-docker:
+	docker run --rm -p 7171:7171 --env-file .env.docker top90-api-v0.1
 
-build-server:
-	cd cmd/server && go build -o ../../bin/server
-	docker build -t top90-server-v${APP_VERSION} .
+build-api:
+	cd cmd/api && go build -o ../../bin/api
+	docker build -t top90-api-v${APP_VERSION} .
 
-build-server-linux:
-	cd cmd/server && GOOS=linux GOARCH=amd64 go build -o ../../bin/server_linux
-	docker build --platform=linux/amd64 -t top90-server-v${APP_VERSION} .
+build-api-linux:
+	cd cmd/api && GOOS=linux GOARCH=amd64 go build -o ../../bin/api_linux
+	docker build --platform=linux/amd64 -t top90-api-v${APP_VERSION} .
 
 # apifootball ----------------------------------------------------------------------------------------------------
 run-apifootball-ingest:

@@ -12,6 +12,6 @@ COPY internal internal
 COPY cmd cmd
 
 RUN go mod download
-RUN cd cmd/server && go build -o ../../bin/server
+RUN cd cmd/api && go build -o ../../bin/api
 
-CMD [ "./bin/server" ]
+CMD [ "./bin/api" ]

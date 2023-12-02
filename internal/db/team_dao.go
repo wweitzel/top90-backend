@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/lib/pq"
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 )
 
 func (dao *PostgresDAO) CountTeams() (int, error) {

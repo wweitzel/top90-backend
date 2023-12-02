@@ -1,6 +1,6 @@
 package db
 
-import "github.com/wweitzel/top90/internal/apifootball"
+import "github.com/wweitzel/top90/internal/clients/apifootball"
 
 func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
 	query := getLeaguesQuery()

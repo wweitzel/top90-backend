@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/wweitzel/top90/internal/apifootball"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 )
 
 func getLeaguesQuery() string {

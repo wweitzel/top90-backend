@@ -28,7 +28,7 @@ jobs:
           push: false
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
 
-  build-server-image:
+  build-api-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -11,7 +11,7 @@ import (
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
-	"github.com/wweitzel/top90/internal/reddit"
+	"github.com/wweitzel/top90/internal/clients/reddit"
 )
 
 type Scraper struct {
@@ -125,7 +125,7 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 	if len(videoNodes) > 0 {
 		for _, videoNode := range videoNodes {
 			sourceUrl = getSource(videoNode, url)
-			if len(sourceUrl) > 0 {
+			if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
 				return sourceUrl
 			}
 		}
@@ -134,7 +134,7 @@ func getVideoSourceChromeDp(ctx context.Context, url string) string {
 	if len(sourceNodes) > 0 {
 		for _, sourceNode := range sourceNodes {
 			sourceUrl = getSource(sourceNode, url)
-			if len(sourceUrl) > 0 {
+			if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
 				return sourceUrl
 			}
 		}
