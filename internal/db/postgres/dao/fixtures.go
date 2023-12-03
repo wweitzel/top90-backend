@@ -1,13 +1,15 @@
-package db
+package dao
 
 import (
 	"time"
 
 	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao/query"
 )
 
-func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixture, error) {
-	query, args := getFixturesQuery(filter)
+func (dao *PostgresDAO) GetFixtures(filter db.GetFixuresFilter) ([]apifootball.Fixture, error) {
+	query, args := query.GetFixtures(filter)
 
 	var fixtures []apifootball.Fixture
 	rows, err := dao.DB.Query(query, args...)
@@ -42,7 +44,7 @@ func (dao *PostgresDAO) GetFixtures(filter GetFixuresFilter) ([]apifootball.Fixt
 }
 
 func (dao *PostgresDAO) GetFixture(id int) (apifootball.Fixture, error) {
-	query := getFixtureQuery(id)
+	query := query.GetFixture(id)
 
 	var fixture apifootball.Fixture
 	row := dao.DB.QueryRow(query, id)
@@ -68,7 +70,7 @@ func (dao *PostgresDAO) GetFixture(id int) (apifootball.Fixture, error) {
 }
 
 func (dao *PostgresDAO) InsertFixture(fixture *apifootball.Fixture) (*apifootball.Fixture, error) {
-	query := insertFixtureQuery(fixture)
+	query := query.InsertFixture(fixture)
 
 	row := dao.DB.QueryRow(
 		query, fixture.Id, fixture.Referee, time.Unix(fixture.Timestamp, 0), fixture.Teams.Home.Id, fixture.Teams.Away.Id, fixture.LeagueId, fixture.Season, fixture.Date,

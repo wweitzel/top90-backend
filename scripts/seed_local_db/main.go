@@ -10,12 +10,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
+	pg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/wweitzel/top90/internal/api/handlers"
 	"github.com/wweitzel/top90/internal/clients/top90"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao"
 )
 
 type seed struct {
@@ -31,13 +32,13 @@ func main() {
 		log.Fatalln("Could not setup database:", err)
 	}
 
-	driver, err := postgres.WithInstance(DB, &postgres.Config{})
+	driver, err := pg.WithInstance(DB, &pg.Config{})
 	if err != nil {
 		log.Fatalln("Could not setup database driver:", err)
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/db/migrations",
+		"file://internal/db/postgres/migrations",
 		"postgres", driver)
 	if err != nil {
 		log.Fatalln("Could not instantiate migrate:", err)
@@ -46,7 +47,7 @@ func main() {
 	m.Down()
 	m.Up()
 
-	dao := db.NewPostgresDAO(DB)
+	dao := dao.NewPostgresDAO(DB)
 
 	top90Client := top90.NewClient(top90.Config{
 		Timeout: 10 * time.Second,

@@ -9,6 +9,7 @@ import (
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	}
 	defer DB.Close()
 
-	dao := db.NewPostgresDAO(DB)
+	dao := dao.NewPostgresDAO(DB)
 
 	allTeams, err := dao.GetTeams(db.GetTeamsFilter{})
 	terminateIfError(err)

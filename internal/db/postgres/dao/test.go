@@ -1,4 +1,4 @@
-package db
+package dao
 
 import (
 	"database/sql"
@@ -10,9 +10,10 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+	"github.com/wweitzel/top90/internal/db"
 )
 
-func setup() (dao Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) {
+func setup() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not construct pool: %s", err)
@@ -64,7 +65,7 @@ func setup() (dao Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) {
 
 	var mig *migrate.Migrate
 	mig, err = migrate.NewWithDatabaseInstance(
-		"file://migrations",
+		"file://../migrations",
 		"postgres", driver)
 
 	if err := mig.Up(); err != nil {

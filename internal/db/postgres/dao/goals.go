@@ -1,4 +1,4 @@
-package db
+package dao
 
 import (
 	"database/sql"
@@ -6,10 +6,12 @@ import (
 
 	"github.com/google/uuid"
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao/query"
 )
 
-func (dao *PostgresDAO) CountGoals(filter GetGoalsFilter) (int, error) {
-	query, args := countGoalsQuery(filter)
+func (dao *PostgresDAO) CountGoals(filter db.GetGoalsFilter) (int, error) {
+	query, args := query.CountGoals(filter)
 
 	var count int
 	err := dao.DB.QueryRow(query, args...).Scan(&count)
@@ -21,7 +23,7 @@ func (dao *PostgresDAO) CountGoals(filter GetGoalsFilter) (int, error) {
 }
 
 func (dao *PostgresDAO) GoalExists(redditFullname string) (bool, error) {
-	query, args := goalExistsQuery(redditFullname)
+	query, args := query.GoalExists(redditFullname)
 
 	var count int
 	err := dao.DB.QueryRow(query, args...).Scan(&count)
@@ -32,8 +34,8 @@ func (dao *PostgresDAO) GoalExists(redditFullname string) (bool, error) {
 	return count > 0, nil
 }
 
-func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error) {
-	query, args := getGoalsQuery(pagination, filter)
+func (dao *PostgresDAO) GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) ([]top90.Goal, error) {
+	query, args := query.GetGoals(pagination, filter)
 
 	var goals []top90.Goal
 	rows, err := dao.DB.Query(query, args...)
@@ -61,7 +63,7 @@ func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) (
 }
 
 func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
-	query := getGoalQuery(id)
+	query := query.GetGoal(id)
 
 	var goal top90.Goal
 	row := dao.DB.QueryRow(query, id)
@@ -81,11 +83,11 @@ func (dao *PostgresDAO) GetGoal(id string) (top90.Goal, error) {
 }
 
 func (dao *PostgresDAO) GetNewestGoal() (top90.Goal, error) {
-	pagination := Pagination{
+	pagination := db.Pagination{
 		Skip:  0,
 		Limit: 1,
 	}
-	newestDbGoals, err := dao.GetGoals(pagination, GetGoalsFilter{})
+	newestDbGoals, err := dao.GetGoals(pagination, db.GetGoalsFilter{})
 	if err != nil {
 		return top90.Goal{}, err
 	}
@@ -102,7 +104,7 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 	id := uuid.NewString()
 	id = strings.Replace(id, "-", "", -1)
 
-	query := insertGoalQuery(goal)
+	query := query.InsertGoal(goal)
 
 	fixtureId := sql.NullInt64{
 		Int64: int64(goal.FixtureId),
@@ -134,7 +136,7 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 // This means you should only set fields on goalUpdate that you actually
 // want to be updated.
 func (dao *PostgresDAO) UpdateGoal(id string, goalUpdate top90.Goal) (top90.Goal, error) {
-	query, args := updateGoalQuery(id, goalUpdate)
+	query, args := query.UpdateGoal(id, goalUpdate)
 
 	row := dao.DB.QueryRow(query, args...)
 

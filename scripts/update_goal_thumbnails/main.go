@@ -10,9 +10,10 @@ import (
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao"
 )
 
-var dao db.Top90DAO
+var pgDAO db.Top90DAO
 var s3Client s3.S3Client
 
 func main() {
@@ -32,15 +33,15 @@ func main() {
 		log.Fatalln("Failed to connect to s3 bucket", err)
 	}
 
-	dao = db.NewPostgresDAO(DB)
+	pgDAO = dao.NewPostgresDAO(DB)
 
-	goalsCount, err := dao.CountGoals(db.GetGoalsFilter{})
+	goalsCount, err := pgDAO.CountGoals(db.GetGoalsFilter{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("Total Goals:", goalsCount)
 
-	goals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 100}, db.GetGoalsFilter{})
+	goals, err := pgDAO.GetGoals(db.Pagination{Skip: 0, Limit: 100}, db.GetGoalsFilter{})
 	if err != nil {
 		log.Fatal(err)
 	}

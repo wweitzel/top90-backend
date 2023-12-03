@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	top90 "github.com/wweitzel/top90/internal"
@@ -27,10 +26,6 @@ type Top90DAO interface {
 	UpdateGoal(id string, goalUpdate top90.Goal) (updatedGoal top90.Goal, err error)
 }
 
-type PostgresDAO struct {
-	DB *sql.DB
-}
-
 type Pagination struct {
 	Skip  int
 	Limit int
@@ -53,10 +48,4 @@ type GetFixuresFilter struct {
 type GetTeamsFilter struct {
 	Country    string
 	SearchTerm string
-}
-
-func NewPostgresDAO(db *sql.DB) Top90DAO {
-	return &PostgresDAO{
-		DB: db,
-	}
 }

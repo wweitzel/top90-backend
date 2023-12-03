@@ -1,4 +1,4 @@
-package db
+package dao
 
 import (
 	"testing"
@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/db"
 	"gotest.tools/v3/assert"
 )
 
@@ -71,16 +72,16 @@ func TestGetGoals(t *testing.T) {
 		ThumbnailS3Key:      "thumbnails3key",
 	})
 
-	count, _ := dao.CountGoals(GetGoalsFilter{})
+	count, _ := dao.CountGoals(db.GetGoalsFilter{})
 	assert.Equal(t, count, 1)
 
-	goals, _ := dao.GetGoals(Pagination{}, GetGoalsFilter{})
+	goals, _ := dao.GetGoals(db.Pagination{}, db.GetGoalsFilter{})
 	assert.Equal(t, len(goals), 1)
 
-	goals, _ = dao.GetGoals(Pagination{}, GetGoalsFilter{FixtureId: fixture.Id})
+	goals, _ = dao.GetGoals(db.Pagination{}, db.GetGoalsFilter{FixtureId: fixture.Id})
 	assert.Equal(t, len(goals), 1)
 
-	goals, _ = dao.GetGoals(Pagination{}, GetGoalsFilter{FixtureId: 9783246978987})
+	goals, _ = dao.GetGoals(db.Pagination{}, db.GetGoalsFilter{FixtureId: 9783246978987})
 	assert.Equal(t, len(goals), 0)
 }
 
@@ -140,13 +141,13 @@ func TestGetFixtures(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	fixtures, _ := dao.GetFixtures(GetFixuresFilter{})
+	fixtures, _ := dao.GetFixtures(db.GetFixuresFilter{})
 	assert.Equal(t, len(fixtures), 2)
 
-	fixtures, _ = dao.GetFixtures(GetFixuresFilter{LeagueId: 1})
+	fixtures, _ = dao.GetFixtures(db.GetFixuresFilter{LeagueId: 1})
 	assert.Equal(t, len(fixtures), 1)
 
-	fixtures, _ = dao.GetFixtures(GetFixuresFilter{Date: time.Now()})
+	fixtures, _ = dao.GetFixtures(db.GetFixuresFilter{Date: time.Now()})
 	assert.Equal(t, len(fixtures), 1)
 }
 
@@ -170,16 +171,16 @@ func TestGetTeams(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	teams, _ := dao.GetTeams(GetTeamsFilter{})
+	teams, _ := dao.GetTeams(db.GetTeamsFilter{})
 	assert.Equal(t, len(teams), 2)
 
-	teams, _ = dao.GetTeams(GetTeamsFilter{Country: "usa"})
+	teams, _ = dao.GetTeams(db.GetTeamsFilter{Country: "usa"})
 	assert.Equal(t, len(teams), 1)
 
-	teams, _ = dao.GetTeams(GetTeamsFilter{Country: "lkjlk"})
+	teams, _ = dao.GetTeams(db.GetTeamsFilter{Country: "lkjlk"})
 	assert.Equal(t, len(teams), 0)
 
-	teams, err = dao.GetTeams(GetTeamsFilter{SearchTerm: "team1"})
+	teams, err = dao.GetTeams(db.GetTeamsFilter{SearchTerm: "team1"})
 	assert.NilError(t, err)
 	assert.Equal(t, len(teams), 1)
 	assert.Equal(t, teams[0].Id, 1)
