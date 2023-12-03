@@ -34,8 +34,12 @@ jobs:
           touch keys/defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.235.254 docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.235.254 docker image prune -f
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.235.254 <<EOF
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
+          EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.235.254 <<EOF
+          docker image prune -f
+          EOF
 
   api:
     runs-on: ubuntu-latest
