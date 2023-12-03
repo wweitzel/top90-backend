@@ -20,6 +20,18 @@ func (dao *PostgresDAO) CountGoals(filter GetGoalsFilter) (int, error) {
 	return count, nil
 }
 
+func (dao *PostgresDAO) GoalExists(redditFullname string) (bool, error) {
+	query, args := goalExistsQuery(redditFullname)
+
+	var count int
+	err := dao.DB.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (dao *PostgresDAO) GetGoals(pagination Pagination, filter GetGoalsFilter) ([]top90.Goal, error) {
 	query, args := getGoalsQuery(pagination, filter)
 

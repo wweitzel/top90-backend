@@ -18,7 +18,7 @@ var s3Client s3.S3Client
 func main() {
 	log.SetFlags(log.Ltime)
 
-	config := config.Load(".env.production.local")
+	config := config.Load()
 
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
 	if err != nil {

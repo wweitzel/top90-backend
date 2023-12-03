@@ -18,6 +18,13 @@ func countGoalsQuery(filter GetGoalsFilter) (string, []any) {
 	return query, args
 }
 
+func goalExistsQuery(redditFullname string) (string, []any) {
+	query := fmt.Sprintf("SELECT count(*) FROM %s where %s = $1", tableNames.Goals, goalColumns.RedditFullname)
+	var args []any
+	args = append(args, redditFullname)
+	return query, args
+}
+
 func getGoalQuery(id string) string {
 	return fmt.Sprintf("SELECT * FROM %s WHERE %s = $1", tableNames.Goals, goalColumns.Id)
 }

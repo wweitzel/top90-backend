@@ -3,55 +3,109 @@ package scrape
 import (
 	"context"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
-	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
-	"github.com/gocolly/colly"
+	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/reddit"
+	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/db"
 )
 
 type Scraper struct {
-	BrowserContext context.Context
+	ctx           context.Context
+	dao           db.Top90DAO
+	redditClient  reddit.RedditClient
+	s3Client      s3.S3Client
+	s3BuckentName string
 }
 
-// Attampts to use Colly retrieve the url of a direct download link to the video
-// at the specified url. If that fails, will try to use chromedp.
-func (scraper *Scraper) GetVideoSourceUrl(url string) string {
-	var sourceUrl string
+func NewScraper(
+	ctx context.Context,
+	dao db.Top90DAO,
+	redditClient reddit.RedditClient,
+	s3Client s3.S3Client,
+	s3BucketName string,
+) Scraper {
 
-	c := colly.NewCollector()
+	return Scraper{
+		ctx:           ctx,
+		dao:           dao,
+		redditClient:  redditClient,
+		s3Client:      s3Client,
+		s3BuckentName: s3BucketName,
+	}
+}
 
-	switch {
-	case strings.HasPrefix(url, "https://streamable"):
-		c.OnHTML("video", func(e *colly.HTMLElement) {
-			sourceUrl = e.Attr(("src"))
-			sourceUrl = "https:" + sourceUrl
-		})
-	case strings.HasPrefix(url, "https://www.clippit"):
-		c.OnHTML("div[data-hd-file]", func(e *colly.HTMLElement) {
-			sourceUrl = e.Attr(("data-hd-file"))
-		})
-	default:
-		c.OnHTML("video source", func(e *colly.HTMLElement) {
-			sourceUrl = e.Attr(("src"))
-		})
+// Scrape reddit posts since last run
+func (s *Scraper) ScrapeNewPosts() {
+	posts := s.findNewRedditPosts()
+
+	for _, post := range posts {
+		log.Println("\nprocessing...", post.Data.Id)
+		s.Scrape(post)
+	}
+}
+
+// Scrape a single reddit post
+func (s *Scraper) Scrape(p reddit.RedditPost) {
+	if len(p.Data.Title) > 110 {
+		log.Println("error: post title does not look like the title of a goal post.")
+		return
 	}
 
-	c.Visit(url)
+	redditFullName := p.Kind + "_" + p.Data.Id
 
-	// If colly could not get the url, try using chromedp
+	goalExists, err := s.dao.GoalExists(redditFullName)
+	if err != nil {
+		log.Println("warning:", "could not check if goal exists", err)
+		return
+	}
+	if goalExists {
+		log.Println("warning:", "goal already exists", p.Data.Title)
+		return
+	}
+
+	fixture, err := s.findFixture(p)
+	if err != nil {
+		log.Println("warning:", "no fixture found in db for", p.Data.Title)
+		return
+	}
+
+	sourceUrl := s.findVideoSourceUrl(p)
+	log.Println("final source url: ", "[", sourceUrl, "]")
+	if sourceUrl == "" {
+		return
+	}
+
+	createdAt := createdTime(p)
+
+	goal := top90.Goal{
+		RedditFullname:      redditFullName,
+		RedditPostCreatedAt: createdAt,
+		RedditPostTitle:     p.Data.Title,
+		RedditLinkUrl:       p.Data.URL,
+		FixtureId:           fixture.Id,
+	}
+
+	loader := Loader{
+		dao:          s.dao,
+		s3Client:     s.s3Client,
+		s3BucketName: s.s3BuckentName,
+	}
+
+	loader.Load(sourceUrl, goal)
+}
+
+func (s *Scraper) findVideoSourceUrl(p reddit.RedditPost) string {
+	sourceUrl := collyscraper{}.getVideoSourceUrl(p.Data.URL)
+
 	if len(sourceUrl) == 0 {
-		sourceUrl = getVideoSourceChromeDp(scraper.BrowserContext, url)
+		sourceUrl = chromeDpScraper{}.getVideoSourceUrl(s.ctx, p.Data.URL)
 	}
 
-	// If video source url is a blob, have to go back and get the real source
-	// using the network tab
-	if strings.HasPrefix(sourceUrl, "blob") && strings.Contains(url, "juststream") {
-		sourceUrl = getVideoSourceChromeDpNetwork(scraper.BrowserContext, url)
+	if strings.HasPrefix(sourceUrl, "blob") && strings.Contains(p.Data.URL, "juststream") {
+		sourceUrl = chromeDpScraper{}.getVideoSourceNetwork(s.ctx, p.Data.URL)
 	} else if strings.HasPrefix(sourceUrl, "blob") {
 		// TODO: Need a way to download from any blob, not just juststream
 		//   For now, just set to empty string since we cant handle other blobs
@@ -61,147 +115,14 @@ func (scraper *Scraper) GetVideoSourceUrl(url string) string {
 	return sourceUrl
 }
 
-// Loops theough the replies and returns immediately when a video source
-// could successfully be extracted from one
-func (scraper *Scraper) GetVideoSourceUrlFromMirrors(replyIds []string) string {
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
-	redditClient := reddit.NewRedditClient(httpClient)
+func (s *Scraper) findNewRedditPosts() []reddit.RedditPost {
 
-	var sourceUrl string
-	for _, replyId := range replyIds {
-		reply := redditClient.GetComment(replyId)
-		body := reply.Data.Body
-		url := getUrlFromBody(body)
+	startEpoch := time.Now().AddDate(0, 0, -1).Unix()
 
-		if url == "" {
-			continue
-		}
-
-		sourceUrl = scraper.GetVideoSourceUrl(url)
-
-		if sourceUrl != "" {
-			log.Println("Found source from mirror: ", url)
-			break
-		}
-	}
-
-	return sourceUrl
+	return s.redditClient.GetNewPosts(startEpoch)
 }
 
-// Uses chrome dp to load page with javascript and get the source url
-func getVideoSourceChromeDp(ctx context.Context, url string) string {
-	var sourceUrl string
-
-	newTabCtx, cancel := chromedp.NewContext(ctx)
-	defer cancel()
-
-	newTabCtx, cancel = context.WithTimeout(newTabCtx, 15*time.Second)
-	defer cancel()
-
-	log.Printf("New tab: %s", url)
-
-	var videoNodes []*cdp.Node
-	var sourceNodes []*cdp.Node
-
-	err := chromedp.Run(newTabCtx,
-		chromedp.Navigate(url),
-		chromedp.WaitVisible(`body`, chromedp.ByQuery),
-		chromedp.WaitVisible(`video`, chromedp.ByQuery),
-		chromedp.ActionFunc(func(context.Context) error {
-			log.Printf(">>>>>>>>>>>>>>>>>>>> video IS VISIBLE")
-			return nil
-		}),
-		chromedp.Nodes(`video`, &videoNodes, chromedp.AtLeast(0)),
-		chromedp.Nodes(`source`, &sourceNodes, chromedp.AtLeast(0)),
-	)
-	if err != nil {
-		log.Printf("%v %s", err, url)
-	} else {
-		log.Println("chromedp did NOT timeout!")
-	}
-
-	if len(videoNodes) > 0 {
-		for _, videoNode := range videoNodes {
-			sourceUrl = getSource(videoNode, url)
-			if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
-				return sourceUrl
-			}
-		}
-	}
-
-	if len(sourceNodes) > 0 {
-		for _, sourceNode := range sourceNodes {
-			sourceUrl = getSource(sourceNode, url)
-			if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
-				return sourceUrl
-			}
-		}
-	}
-
-	return ""
-}
-
-func getSource(node *cdp.Node, url string) string {
-	sourceUrl := node.AttributeValue("src")
-	// Sometimes streamff sources are a relative path
-	if strings.HasPrefix(url, "https://streamff") && strings.HasPrefix(sourceUrl, "/uploads") {
-		sourceUrl = "https://streamff.com" + sourceUrl
-	}
-	if len(sourceUrl) > 0 {
-		return sourceUrl
-	}
-
-	return ""
-}
-
-// Uses chromedp to scan network for xhr ending in m3u8 and returns that url
-func getVideoSourceChromeDpNetwork(ctx context.Context, url string) string {
-	newTabCtx, cancel := chromedp.NewContext(ctx)
-	defer cancel()
-
-	newTabCtx, cancel = context.WithTimeout(newTabCtx, 3*time.Second)
-	defer cancel()
-
-	log.Printf("New tab for juststream processing: %s", url)
-
-	var sourceUrl string
-
-	chromedp.ListenTarget(newTabCtx, func(ev interface{}) {
-		if ev, ok := ev.(*network.EventResponseReceived); ok {
-			if ev.Type != "XHR" {
-				return
-			}
-
-			if strings.HasSuffix(ev.Response.URL, "video.m3u8") {
-				log.Println("XHR event had .m3u8 ending:", ev.Response.URL)
-				sourceUrl = ev.Response.URL
-				return
-			}
-		}
-	})
-
-	err := chromedp.Run(newTabCtx,
-		network.Enable(),
-		chromedp.Navigate(url),
-	)
-	if err != nil {
-		log.Printf("%v %s", err, url)
-	}
-
-	return sourceUrl
-}
-
-func getUrlFromBody(body string) string {
-	// Body format is [Juststream Mirror](https://juststream.live/DefyForgingsVain)
-	// So slice from the '(' to the ')'
-	startIndex := strings.IndexByte(body, '(') + 1
-	endIndex := strings.IndexByte(body, ')')
-
-	if startIndex < 0 || endIndex < 0 {
-		return ""
-	}
-
-	return body[startIndex:endIndex]
+func createdTime(p reddit.RedditPost) time.Time {
+	unixTimestamp := p.Data.Created_utc
+	return time.Unix(int64(unixTimestamp), 0).UTC()
 }
