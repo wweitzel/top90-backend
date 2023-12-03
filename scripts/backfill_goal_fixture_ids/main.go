@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"log"
+	"strings"
 
 	top90 "github.com/wweitzel/top90/internal"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/scrape"
 )
 
 func main() {
@@ -40,7 +42,7 @@ func main() {
 		fixtures, err := dao.GetFixtures(db.GetFixuresFilter{Date: goal.RedditPostCreatedAt})
 		terminateIfError(err)
 
-		fixture, err := scrape.FindFixture(goal.RedditPostTitle, allTeams, fixtures)
+		fixture, err := FindFixture(goal.RedditPostTitle, allTeams, fixtures)
 		if err != nil {
 			log.Printf("%v", err)
 			continue
@@ -64,4 +66,34 @@ func terminateIfError(err error) {
 	if err != nil {
 		log.Fatalf("Failed %v", err)
 	}
+}
+
+func findTeams(redditPostTile string, teams []apifootball.Team) []apifootball.Team {
+	var teamsFound []apifootball.Team
+	for _, team := range teams {
+		if strings.Contains(redditPostTile, team.Name) {
+			teamsFound = append(teamsFound, team)
+		} else {
+			for _, alias := range team.Aliases {
+				if strings.Contains(redditPostTile, alias) {
+					teamsFound = append(teamsFound, team)
+				}
+			}
+		}
+	}
+	return teamsFound
+}
+
+func FindFixture(redditPostTitle string, allTeams []apifootball.Team, fixtures []apifootball.Fixture) (apifootball.Fixture, error) {
+	teams := findTeams(redditPostTitle, allTeams)
+
+	for _, f := range fixtures {
+		for _, t := range teams {
+			if f.Teams.Home.Id == t.Id || f.Teams.Away.Id == t.Id {
+				return f, nil
+			}
+		}
+	}
+
+	return apifootball.Fixture{}, errors.New("could not determine fixture")
 }

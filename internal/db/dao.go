@@ -19,6 +19,7 @@ type Top90DAO interface {
 	GetNewestGoal() (top90.Goal, error)
 	GetTeams(filter GetTeamsFilter) ([]apifootball.Team, error)
 	GetTeamsForLeagueAndSeason(leagueId, season int) ([]apifootball.Team, error)
+	GoalExists(redditFullname string) (bool, error)
 	InsertFixture(*apifootball.Fixture) (*apifootball.Fixture, error)
 	InsertGoal(*top90.Goal) (*top90.Goal, error)
 	InsertLeague(*apifootball.League) (*apifootball.League, error)
