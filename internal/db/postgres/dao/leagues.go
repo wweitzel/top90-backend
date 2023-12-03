@@ -1,9 +1,12 @@
-package db
+package dao
 
-import "github.com/wweitzel/top90/internal/clients/apifootball"
+import (
+	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/db/postgres/dao/query"
+)
 
 func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
-	query := getLeaguesQuery()
+	query := query.GetLeagues()
 
 	var leagues []apifootball.League
 	rows, err := dao.DB.Query(query)
@@ -25,7 +28,7 @@ func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
 }
 
 func (dao *PostgresDAO) InsertLeague(league *apifootball.League) (*apifootball.League, error) {
-	query := insertLeagueQuery(league)
+	query := query.InsertLeague(league)
 
 	row := dao.DB.QueryRow(
 		query, league.Id, league.Name, league.Type, league.Logo,

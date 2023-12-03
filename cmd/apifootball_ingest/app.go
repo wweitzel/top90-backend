@@ -10,6 +10,7 @@ import (
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao"
 )
 
 type App struct {
@@ -28,7 +29,7 @@ func loadApp() (app App, conn *sql.DB) {
 	}
 
 	// Create dao for accessing the db
-	dao := db.NewPostgresDAO(DB)
+	dao := dao.NewPostgresDAO(DB)
 
 	host := os.Getenv("API_FOOTBALL_RAPID_API_HOST")
 	apiKey := os.Getenv("API_FOOTBALL_RAPID_API_KEY")

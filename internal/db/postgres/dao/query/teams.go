@@ -1,19 +1,24 @@
-package db
+package query
 
 import (
 	"fmt"
 
 	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/db"
 )
 
-func getTeamsQuery(filter GetTeamsFilter) (string, []any) {
+func CountTeams() string {
+	return fmt.Sprintf("SELECT count(*) FROM %s", tableNames.Teams)
+}
+
+func GetTeams(filter db.GetTeamsFilter) (string, []any) {
 	var args []any
 	whereClause, args := getTeamsWhereClause(filter, args)
 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s ORDER BY %s ASC", tableNames.Teams, whereClause, teamColumns.Name)
 	return query, args
 }
 
-func getTeamsForLeagueAndSeasonQuery(leagueId, season int) (string, []any) {
+func GetTeamsForLeagueAndSeason(leagueId, season int) (string, []any) {
 	var args []any
 
 	// Union of home teams ids and away team ids for a given league season
@@ -55,7 +60,15 @@ func getTeamsForLeagueAndSeasonQuery(leagueId, season int) (string, []any) {
 	return query, args
 }
 
-func getTeamsWhereClause(filter GetTeamsFilter, args []any) (string, []any) {
+func InsertTeamQuery(team *apifootball.Team) string {
+	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
+		tableNames.Teams,
+		teamColumns.Id, teamColumns.Name, teamColumns.Code, teamColumns.Country, teamColumns.Founded, teamColumns.National, teamColumns.Logo,
+		leagueColumns.Id,
+	)
+}
+
+func getTeamsWhereClause(filter db.GetTeamsFilter, args []any) (string, []any) {
 	whereClause := ""
 
 	whereClause = whereClause + "$1"
@@ -72,16 +85,4 @@ func getTeamsWhereClause(filter GetTeamsFilter, args []any) (string, []any) {
 	}
 
 	return whereClause, args
-}
-
-func countTeamsQuery() string {
-	return fmt.Sprintf("SELECT count(*) FROM %s", tableNames.Teams)
-}
-
-func insertTeamQuery(team *apifootball.Team) string {
-	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
-		tableNames.Teams,
-		teamColumns.Id, teamColumns.Name, teamColumns.Code, teamColumns.Country, teamColumns.Founded, teamColumns.National, teamColumns.Logo,
-		leagueColumns.Id,
-	)
 }

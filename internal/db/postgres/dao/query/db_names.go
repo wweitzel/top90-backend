@@ -1,4 +1,4 @@
-package db
+package query
 
 type TableNames struct {
 	Goals    string

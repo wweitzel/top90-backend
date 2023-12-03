@@ -8,6 +8,7 @@ import (
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao"
 )
 
 func main() {
@@ -50,5 +51,5 @@ func initDao(user, password, name, host, port string) db.Top90DAO {
 		log.Fatalf("Could not set up database: %v", err)
 	}
 
-	return db.NewPostgresDAO(DB)
+	return dao.NewPostgresDAO(DB)
 }

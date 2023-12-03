@@ -1,12 +1,14 @@
-package db
+package dao
 
 import (
 	"github.com/lib/pq"
 	"github.com/wweitzel/top90/internal/clients/apifootball"
+	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/postgres/dao/query"
 )
 
 func (dao *PostgresDAO) CountTeams() (int, error) {
-	query := countTeamsQuery()
+	query := query.CountTeams()
 
 	var count int
 	err := dao.DB.QueryRow(query).Scan(&count)
@@ -17,8 +19,8 @@ func (dao *PostgresDAO) CountTeams() (int, error) {
 	return count, nil
 }
 
-func (dao *PostgresDAO) GetTeams(filter GetTeamsFilter) ([]apifootball.Team, error) {
-	query, args := getTeamsQuery(filter)
+func (dao *PostgresDAO) GetTeams(filter db.GetTeamsFilter) ([]apifootball.Team, error) {
+	query, args := query.GetTeams(filter)
 
 	var teams []apifootball.Team
 	rows, err := dao.DB.Query(query, args...)
@@ -40,7 +42,7 @@ func (dao *PostgresDAO) GetTeams(filter GetTeamsFilter) ([]apifootball.Team, err
 }
 
 func (dao *PostgresDAO) GetTeamsForLeagueAndSeason(leagueId, season int) ([]apifootball.Team, error) {
-	query, args := getTeamsForLeagueAndSeasonQuery(leagueId, season)
+	query, args := query.GetTeamsForLeagueAndSeason(leagueId, season)
 
 	var teams []apifootball.Team
 	rows, err := dao.DB.Query(query, args...)
@@ -62,7 +64,7 @@ func (dao *PostgresDAO) GetTeamsForLeagueAndSeason(leagueId, season int) ([]apif
 }
 
 func (dao *PostgresDAO) InsertTeam(team *apifootball.Team) (*apifootball.Team, error) {
-	query := insertTeamQuery(team)
+	query := query.InsertTeamQuery(team)
 
 	row := dao.DB.QueryRow(
 		query, team.Id, team.Name, team.Code, team.Country, team.Founded, team.National, team.Logo,
