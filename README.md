@@ -16,7 +16,7 @@ Anyone is welcome to submit a PR. PRs should be tested and verified locally firs
 1. Install Go and Docker if you do not have them installed.
 2. Run the following command to create local environment files.
 ```
-cp .env.sample .env-cheadle && cp .env.docker.sample .env.docker-cheadle
+cp .env.sample .env && cp .env.docker.sample .env.docker
 ```
 3. Start dev db and s3 in docker.
 ```
