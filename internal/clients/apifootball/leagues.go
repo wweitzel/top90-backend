@@ -1,6 +1,11 @@
 package apifootball
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+	"log"
+	"net/url"
+)
 
 const leaguesUrl = baseUrl + "leagues"
 
@@ -12,42 +17,30 @@ type League struct {
 	CreatedAt string `json:"createdAt"`
 }
 
-func (client *Client) GetLeague(country, leagueName string) (League, error) {
-	req, err := client.newRequest("GET", leaguesUrl)
+func (c *Client) GetLeague(country, leagueName string) (*League, error) {
+	query := url.Values{}
+	query.Set("country", country)
+	query.Set("name", leagueName)
+
+	resp, err := c.doGet(leaguesUrl, query)
 	if err != nil {
-		return League{}, err
+		return nil, err
 	}
-
-	queryParams := req.URL.Query()
-	queryParams.Set("country", country)
-	queryParams.Set("name", leagueName)
-
-	req.URL.RawQuery = queryParams.Encode()
-
-	getLeaguesResponse := &GetLeaguesResponse{}
-	resp, err := client.do(req, getLeaguesResponse)
-	if err != nil {
-		return League{}, err
-	}
-
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return League{}, errors.New(resp.Status)
+		return nil, errors.New(resp.Status)
 	}
 
-	return toLeagues(*getLeaguesResponse)[0], nil
-}
-
-func toLeagues(response GetLeaguesResponse) []League {
-	var leagues []League
-
-	for _, l := range response.Data {
-		league := League{}
-		league.Id = l.League.ID
-		league.Logo = l.League.Logo
-		league.Name = l.League.Name
-		league.Type = l.League.Type
-		leagues = append(leagues, league)
+	r := &GetLeaguesResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
+	if err != nil {
+		log.Println(err)
 	}
 
-	return leagues
+	leagues := r.toLeagues()
+	if len(leagues) > 0 {
+		return &leagues[0], nil
+	}
+
+	return nil, nil
 }

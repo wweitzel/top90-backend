@@ -15,7 +15,7 @@ import (
 type Scraper struct {
 	ctx           context.Context
 	dao           db.Top90DAO
-	redditClient  reddit.RedditClient
+	redditClient  reddit.Client
 	s3Client      s3.S3Client
 	s3BuckentName string
 }
@@ -23,7 +23,7 @@ type Scraper struct {
 func NewScraper(
 	ctx context.Context,
 	dao db.Top90DAO,
-	redditClient reddit.RedditClient,
+	redditClient reddit.Client,
 	s3Client s3.S3Client,
 	s3BucketName string,
 ) Scraper {
@@ -37,9 +37,8 @@ func NewScraper(
 	}
 }
 
-// Scrape reddit posts since last run
 func (s *Scraper) ScrapeNewPosts() {
-	posts := s.findNewRedditPosts()
+	posts := s.redditClient.GetNewPosts()
 
 	for _, post := range posts {
 		log.Println("\nprocessing...", post.Data.Id)
@@ -47,8 +46,7 @@ func (s *Scraper) ScrapeNewPosts() {
 	}
 }
 
-// Scrape a single reddit post
-func (s *Scraper) Scrape(p reddit.RedditPost) {
+func (s *Scraper) Scrape(p reddit.Post) {
 	if len(p.Data.Title) > 110 {
 		log.Println("error: post title does not look like the title of a goal post.")
 		return
@@ -97,7 +95,7 @@ func (s *Scraper) Scrape(p reddit.RedditPost) {
 	loader.Load(sourceUrl, goal)
 }
 
-func (s *Scraper) findVideoSourceUrl(p reddit.RedditPost) string {
+func (s *Scraper) findVideoSourceUrl(p reddit.Post) string {
 	sourceUrl := collyscraper{}.getVideoSourceUrl(p.Data.URL)
 
 	if len(sourceUrl) == 0 {
@@ -115,14 +113,7 @@ func (s *Scraper) findVideoSourceUrl(p reddit.RedditPost) string {
 	return sourceUrl
 }
 
-func (s *Scraper) findNewRedditPosts() []reddit.RedditPost {
-
-	startEpoch := time.Now().AddDate(0, 0, -1).Unix()
-
-	return s.redditClient.GetNewPosts(startEpoch)
-}
-
-func createdTime(p reddit.RedditPost) time.Time {
+func createdTime(p reddit.Post) time.Time {
 	unixTimestamp := p.Data.Created_utc
 	return time.Unix(int64(unixTimestamp), 0).UTC()
 }

@@ -9,25 +9,26 @@ import (
 
 const fixturesUrl = "/fixtures"
 
-func (c Client) GetFixtures(req handlers.GetFixturesRequest) (*handlers.GetFixturesResponse, error) {
+func (c *Client) GetFixtures(req handlers.GetFixturesRequest) (*handlers.GetFixturesResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	encoded := url.QueryEscape(string(jsonData))
+	query := "?json=" + url.QueryEscape(string(jsonData))
+	url := apiUrl + fixturesUrl + query
 
-	url := apiUrl + fixturesUrl + "?json=" + encoded
-	body, err := c.doGet(url)
+	resp, err := c.http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	r := &handlers.GetFixturesResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
 	if err != nil {
 		return nil, err
 	}
 
-	var response handlers.GetFixturesResponse
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	return &response, nil
+	return r, nil
 }

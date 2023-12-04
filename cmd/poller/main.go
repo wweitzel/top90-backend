@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -39,7 +38,7 @@ func main() {
 		log.Fatalf("Coult not setup chromedp: %v", err)
 	}
 
-	redditClient := reddit.NewRedditClient(&http.Client{Timeout: time.Second * 10})
+	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
 	dao := dao.NewPostgresDAO(DB)
 
 	scraper := scrape.NewScraper(ctx, dao, redditClient, s3Client, config.AwsBucketName)

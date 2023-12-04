@@ -106,3 +106,8 @@ type GetPlayersResponse struct {
 		} `json:"statistics"`
 	} `json:"response"`
 }
+
+func (resp *GetPlayersResponse) toPlayers() []Player {
+	var players []Player
+	return players
+}

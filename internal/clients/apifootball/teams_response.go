@@ -33,3 +33,21 @@ type GetTeamsResponse struct {
 		} `json:"venue"`
 	} `json:"response"`
 }
+
+func (resp *GetTeamsResponse) toTeams() []Team {
+	var teams []Team
+
+	for _, t := range resp.Data {
+		team := Team{}
+		team.Id = t.Team.ID
+		team.Name = t.Team.Name
+		team.Code = t.Team.Code
+		team.Country = t.Team.Country
+		team.Founded = t.Team.Founded
+		team.National = t.Team.National
+		team.Logo = t.Team.Logo
+		teams = append(teams, team)
+	}
+
+	return teams
+}

@@ -1,48 +1,53 @@
 package apifootball
 
 import (
-	"encoding/json"
 	"net/http"
+	"net/url"
+	"time"
 )
 
 type Client struct {
-	httpClient *http.Client
-	host       string
-	apiKey     string
+	http   http.Client
+	host   string
+	apiKey string
+}
+
+type Config struct {
+	Host    string
+	ApiKey  string
+	Timeout time.Duration
 }
 
 const baseUrl = "https://api-football-v1.p.rapidapi.com/v3/"
 
-func NewClient(host, apiKey string, httpClient *http.Client) *Client {
-	if httpClient == nil {
-		httpClient = &http.Client{}
+func NewClient(cfg Config) Client {
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 10 * time.Second
 	}
 
-	return &Client{
-		httpClient: httpClient,
-		host:       host,
-		apiKey:     apiKey,
+	c := http.Client{Timeout: cfg.Timeout}
+
+	return Client{
+		http:   c,
+		host:   cfg.Host,
+		apiKey: cfg.ApiKey,
 	}
 }
 
-func (client *Client) newRequest(method, url string) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, nil)
+func (c *Client) doGet(url string, query url.Values) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("X-RapidAPI-Host", client.host)
-	req.Header.Add("X-RapidAPI-Key", client.apiKey)
-	return req, nil
-}
+	req.URL.RawQuery = query.Encode()
+	req.Header.Add("X-RapidAPI-Host", c.host)
+	req.Header.Add("X-RapidAPI-Key", c.apiKey)
 
-func (client *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
-	resp, err := client.httpClient.Do(req)
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	err = json.NewDecoder(resp.Body).Decode(v)
-	return resp, err
+	return resp, nil
 }

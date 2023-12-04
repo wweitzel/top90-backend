@@ -1,26 +1,37 @@
 package apifootball
 
-import "strconv"
+import (
+	"encoding/json"
+	"errors"
+	"log"
+	"net/url"
+	"strconv"
+)
 
 const playersUrl = baseUrl + "players"
 
-func (client *Client) GetPlayers(league, season int) (*GetPlayersResponse, error) {
-	req, err := client.newRequest("GET", playersUrl)
+type Player struct{}
+
+func (c *Client) GetPlayers(league, season int) ([]Player, error) {
+	query := url.Values{}
+	query.Set("league", strconv.Itoa(league))
+	query.Set("season", strconv.Itoa(season))
+
+	resp, err := c.doGet(playersUrl, query)
 	if err != nil {
 		return nil, err
 	}
-
-	queryParams := req.URL.Query()
-	queryParams.Set("league", strconv.Itoa(league))
-	queryParams.Set("season", strconv.Itoa(season))
-
-	req.URL.RawQuery = queryParams.Encode()
-
-	getPlayersResponse := &GetPlayersResponse{}
-	_, err = client.do(req, getPlayersResponse)
-	if err != nil {
-		return nil, err
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, errors.New(resp.Status)
 	}
 
-	return getPlayersResponse, nil
+	r := &GetPlayersResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
+	if err != nil {
+		log.Println(err)
+	}
+
+	players := r.toPlayers()
+	return players, nil
 }

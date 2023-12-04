@@ -42,7 +42,7 @@ func (app *App) IngestLeagues() {
 		}
 
 		// Insert league into the db
-		createdLeague, err := app.dao.InsertLeague(&league)
+		createdLeague, err := app.dao.InsertLeague(league)
 		if err == sql.ErrNoRows {
 			log.Printf("Already stored league for id %d", league.Id)
 		} else if err != nil {

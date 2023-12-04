@@ -4,80 +4,77 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
+	"time"
 )
 
-type RedditClient struct {
-	http            *http.Client
-	accessTokenInfo RedditAccessTokenInfo
+type Client struct {
+	http  http.Client
+	token AccessToken
 }
 
-type RedditAccessTokenInfo struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	DeviceId    string `json:"device_id"`
-	ExpiresIn   int    `json:"expires_in"`
-	Scope       string `json:"scope"`
+type Config struct {
+	Timeout time.Duration
 }
 
-const redditAccessTokenUrl = `https://www.reddit.com/api/v1/access_token`
+type AccessToken struct {
+	Token     string `json:"access_token"`
+	Type      string `json:"token_type"`
+	DeviceId  string `json:"device_id"`
+	ExpiresIn int    `json:"expires_in"`
+	Scope     string `json:"scope"`
+}
 
-var redditBasicAuth = os.Getenv("TOP90_REDDIT_BASIC_AUTH")
+func NewClient(cfg Config) Client {
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 10 * time.Second
+	}
 
-func NewRedditClient(httpClient *http.Client) RedditClient {
-	client := &http.Client{}
+	c := http.Client{Timeout: cfg.Timeout}
 
-	reqBody := "grant_type=client_credentials"
-
-	req, err := http.NewRequest("POST", redditAccessTokenUrl, bytes.NewBuffer([]byte(reqBody)))
+	url := "https://www.reddit.com/api/v1/access_token"
+	body := bytes.NewBuffer([]byte("grant_type=client_credentials"))
+	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		log.Println(err)
 	}
 
 	req.Header.Add("User-Agent", "browser:top90:v0.0 (by /u/top90app)")
-	req.Header.Add("Authorization", redditBasicAuth)
+	req.Header.Add("Authorization", "redditbasicauth")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-	}
-
-	var accessTokenInfo RedditAccessTokenInfo
-	err = json.Unmarshal(body, &accessTokenInfo)
+	token := &AccessToken{}
+	err = json.NewDecoder(resp.Body).Decode(token)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return RedditClient{
-		http:            client,
-		accessTokenInfo: accessTokenInfo,
+	return Client{
+		http:  c,
+		token: *token,
 	}
 }
 
-func (client *RedditClient) doGet(url string) (body []byte, err error) {
+func (c *Client) doGet(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	req.Header.Add("User-Agent", "browser:top90:v0.0 (by /r/top90app)")
-	req.Header.Add("Authorization", fmt.Sprintf("Token %s", client.accessTokenInfo.AccessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Token %s", c.token.Token))
 
-	resp, err := client.http.Do(req)
+	resp, err := c.http.Do(req)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	return resp, nil
 }

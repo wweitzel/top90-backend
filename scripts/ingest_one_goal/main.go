@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -16,8 +15,6 @@ import (
 )
 
 func main() {
-	log.Println("Starting Run...")
-
 	config := config.Load()
 
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
@@ -40,12 +37,12 @@ func main() {
 		log.Fatalf("Coult not setup chromedp: %v", err)
 	}
 
-	redditClient := reddit.NewRedditClient(&http.Client{Timeout: time.Second * 10})
+	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
 	dao := dao.NewPostgresDAO(DB)
 
 	scraper := scrape.NewScraper(ctx, dao, redditClient, s3Client, config.AwsBucketName)
 
-	post := reddit.RedditPost{
+	post := reddit.Post{
 		Data: struct {
 			URL                  string
 			Title                string
@@ -53,11 +50,8 @@ func main() {
 			Id                   string
 			Link_flair_css_class string
 		}{
-			URL: "https://www.ole.com.ar/futbol-primera/colon-vs-gimansia-hoy-vivo-desempate-descenso-categoria-hora-ver-resumen_0_BIf8pOsDCf.html",
+			URL: "https://streamin.one/v/9f11a946",
 		}}
 
 	scraper.Scrape(post)
-
-	log.Println("Finished.")
-
 }

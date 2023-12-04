@@ -16,7 +16,7 @@ func (app *App) IngestFixtures() {
 	}
 
 	for _, league := range leagues {
-		fixtures, err := app.client.GetFixtures(league.Id, SEASON)
+		fixtures, err := app.client.GetFixtures(78, SEASON)
 		if err != nil {
 			log.Fatalf("Could not get teams for leagueId %d, season %d\n due to %v\n", league.Id, SEASON, err)
 		}
