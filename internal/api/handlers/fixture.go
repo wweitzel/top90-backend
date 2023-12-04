@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/db"
 )
@@ -35,7 +35,7 @@ func NewFixtureHandler(dao db.Top90DAO) *FixtureHandler {
 }
 
 func (h *FixtureHandler) GetFixture(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+	id := chi.URLParam(r, "id")
 
 	fixtureId, err := strconv.Atoi(id)
 	if err != nil {

@@ -6,10 +6,10 @@ require (
 	github.com/aws/aws-sdk-go v1.48.11
 	github.com/chromedp/cdproto v0.0.0-20230901104747-bfe71bcbd1c0
 	github.com/chromedp/chromedp v0.9.2
+	github.com/go-chi/chi/v5 v5.0.10
 	github.com/gocolly/colly v1.2.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest/v3 v3.10.0
 	gotest.tools/v3 v3.3.0

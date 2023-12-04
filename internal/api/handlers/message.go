@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/db"
 )
@@ -22,7 +22,7 @@ func NewMessageHandler(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string) *
 	}
 }
 func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+	id := chi.URLParam(r, "id")
 	goal, _ := h.dao.GetGoal(id)
 
 	thumbnailUrl := "https://s3-redditsoccergoals.top90.io/" + goal.ThumbnailS3Key
