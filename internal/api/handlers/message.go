@@ -30,7 +30,6 @@ func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
 
 	goal.PresignedUrl = videoUrl
 	goal.ThumbnailPresignedUrl = thumbnailUrl
-	imageType := "image/avif"
 
 	html :=
 		`<!doctype html>` +
@@ -42,7 +41,6 @@ func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
 			// Max expiry date for presigned url is apparently one week.
 			`	<meta property="og:title" content="` + goal.RedditPostTitle + `"` + `>` +
 			`	<meta property="og:image" content="` + thumbnailUrl + `"` + `>` +
-			`	<meta property="og:image:type" content="` + imageType + `"` + `>` +
 			`	<meta property="og:video" content="` + videoUrl + `"` + `>` +
 			` <meta http-equiv="refresh" content="0; url='https://top90.io/goals/` + goal.Id + `'" />` +
 			` <title>top90.io</title>` +
