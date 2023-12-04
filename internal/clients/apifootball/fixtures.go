@@ -3,7 +3,6 @@ package apifootball
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/url"
 	"strconv"
 	"time"
@@ -44,7 +43,7 @@ func (c *Client) GetFixtures(league, season int) ([]Fixture, error) {
 	r := &GetFixturesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(r)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	fixtures := r.toFixtures()
