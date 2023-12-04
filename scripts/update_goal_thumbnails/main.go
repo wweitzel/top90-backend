@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sync"
 
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/s3"
@@ -41,24 +42,60 @@ func main() {
 	}
 	log.Println("Total Goals:", goalsCount)
 
-	goals, err := pgDAO.GetGoals(db.Pagination{Skip: 0, Limit: 100}, db.GetGoalsFilter{})
+	goals, err := pgDAO.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for index, goal := range goals {
-		log.Println(goal.RedditPostTitle)
-		tmpFilePath := fmt.Sprintf("tmp/vid#%d.mp4", index)
-		updateThumnnail(goal, "reddit-soccer-goals", tmpFilePath, index)
-	}
+	updateThumbnails(goals, config.AwsBucketName)
 }
 
-func updateThumnnail(goal top90.Goal, bucketName string, videoFilename string, i int) error {
-	s3Client.DownloadFile(goal.S3ObjectKey, bucketName, videoFilename)
-	thumbnailFilename := fmt.Sprintf("tmp/thumb#%d.jpg", i)
-	defer os.Remove(thumbnailFilename)
-	defer os.Remove(videoFilename)
+type UpdateThumbnailJob struct {
+	Goal       top90.Goal
+	BucketName string
+	Id         int
+}
 
+func updateThumbnails(goals []top90.Goal, bucketName string) {
+	jobs := make(chan UpdateThumbnailJob, len(goals))
+
+	var wg sync.WaitGroup
+
+	var worker = func(job chan UpdateThumbnailJob) {
+		for job := range jobs {
+			func() {
+				defer wg.Done()
+				updateThumbnail(job.Goal, job.BucketName, job.Id)
+			}()
+		}
+	}
+
+	const workers = 5
+	for w := 0; w < workers; w++ {
+		go worker(jobs)
+	}
+
+	for i, goal := range goals {
+		wg.Add(1)
+		job := UpdateThumbnailJob{
+			Goal:       goal,
+			BucketName: bucketName,
+			Id:         i,
+		}
+		jobs <- job
+	}
+
+	close(jobs)
+	wg.Wait()
+}
+
+func updateThumbnail(goal top90.Goal, bucketName string, id int) error {
+	videoFilename := fmt.Sprintf("tmp/vid#%d.mp4", id)
+	defer os.Remove(videoFilename)
+	s3Client.DownloadFile(goal.S3ObjectKey, bucketName, videoFilename)
+
+	thumbnailFilename := fmt.Sprintf("tmp/thumb#%d.jpg", id)
+	defer os.Remove(thumbnailFilename)
 	ffmpegPath := os.Getenv("TOP90_FFMPEG_PATH")
 	cmd := exec.Command(ffmpegPath, "-i", videoFilename, "-q:v", "8", "-vframes", "1", thumbnailFilename)
 	cmd.Stderr = os.Stdout
