@@ -83,3 +83,26 @@ type GetFixturesResponse struct {
 		} `json:"score"`
 	} `json:"response"`
 }
+
+func (resp *GetFixturesResponse) toFixtures() []Fixture {
+	var fixtures []Fixture
+
+	for _, f := range resp.Data {
+		fixture := Fixture{}
+		fixture.Id = f.Fixture.ID
+		fixture.Timestamp = f.Fixture.Timestamp
+		fixture.Date = f.Fixture.Date
+		fixture.Referee = f.Fixture.Referee
+		fixture.Teams.Home.Id = f.Teams.Home.Id
+		fixture.Teams.Home.Name = f.Teams.Home.Name
+		fixture.Teams.Home.Logo = f.Teams.Home.Logo
+		fixture.Teams.Away.Id = f.Teams.Away.Id
+		fixture.Teams.Away.Name = f.Teams.Away.Name
+		fixture.Teams.Away.Logo = f.Teams.Away.Logo
+		fixture.LeagueId = f.League.Id
+		fixture.Season = f.League.Season
+		fixtures = append(fixtures, fixture)
+	}
+
+	return fixtures
+}

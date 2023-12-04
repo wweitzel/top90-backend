@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 )
 
 type App struct {
-	client *apifootball.Client
+	client apifootball.Client
 	dao    db.Top90DAO
 }
 
@@ -33,10 +32,13 @@ func loadApp() (app App, conn *sql.DB) {
 
 	host := os.Getenv("API_FOOTBALL_RAPID_API_HOST")
 	apiKey := os.Getenv("API_FOOTBALL_RAPID_API_KEY")
-	httpClient := &http.Client{Timeout: 10 * time.Second}
 
 	// Instantiate an apifootball api client
-	client := apifootball.NewClient(host, apiKey, httpClient)
+	client := apifootball.NewClient(apifootball.Config{
+		Host:    host,
+		ApiKey:  apiKey,
+		Timeout: 10 * time.Second,
+	})
 
 	return App{
 		client: client,

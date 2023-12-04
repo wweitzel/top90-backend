@@ -8,18 +8,20 @@ import (
 
 const leaguesUrl = "/leagues"
 
-func (c Client) GetLeagues() (*handlers.GetLeaguesResponse, error) {
+func (c *Client) GetLeagues() (*handlers.GetLeaguesResponse, error) {
 	url := apiUrl + leaguesUrl + "?json={}"
-	body, err := c.doGet(url)
+
+	resp, err := c.http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	r := &handlers.GetLeaguesResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
 	if err != nil {
 		return nil, err
 	}
 
-	var response handlers.GetLeaguesResponse
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	return &response, nil
+	return r, nil
 }

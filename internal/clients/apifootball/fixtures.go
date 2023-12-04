@@ -1,7 +1,10 @@
 package apifootball
 
 import (
+	"encoding/json"
 	"errors"
+	"log"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -24,52 +27,26 @@ type Fixture struct {
 	CreatedAt string    `json:"createdAt"`
 }
 
-func (client *Client) GetFixtures(league, season int) ([]Fixture, error) {
-	req, err := client.newRequest("GET", fixturesUrl)
+func (c *Client) GetFixtures(league, season int) ([]Fixture, error) {
+	query := url.Values{}
+	query.Set("league", strconv.Itoa(league))
+	query.Set("season", strconv.Itoa(season))
+
+	resp, err := c.doGet(fixturesUrl, query)
 	if err != nil {
 		return nil, err
 	}
-
-	queryParams := req.URL.Query()
-	queryParams.Set("league", strconv.Itoa(league))
-	queryParams.Set("season", strconv.Itoa(season))
-
-	req.URL.RawQuery = queryParams.Encode()
-
-	getFixturesResponse := &GetFixturesResponse{}
-	resp, err := client.do(req, getFixturesResponse)
-	if err != nil {
-		return nil, err
-	}
-
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, errors.New(resp.Status)
 	}
 
-	var fixtures = toFixtures(getFixturesResponse)
-
-	return fixtures, nil
-}
-
-func toFixtures(response *GetFixturesResponse) []Fixture {
-	var fixtures []Fixture
-
-	for _, f := range response.Data {
-		fixture := Fixture{}
-		fixture.Id = f.Fixture.ID
-		fixture.Timestamp = f.Fixture.Timestamp
-		fixture.Date = f.Fixture.Date
-		fixture.Referee = f.Fixture.Referee
-		fixture.Teams.Home.Id = f.Teams.Home.Id
-		fixture.Teams.Home.Name = f.Teams.Home.Name
-		fixture.Teams.Home.Logo = f.Teams.Home.Logo
-		fixture.Teams.Away.Id = f.Teams.Away.Id
-		fixture.Teams.Away.Name = f.Teams.Away.Name
-		fixture.Teams.Away.Logo = f.Teams.Away.Logo
-		fixture.LeagueId = f.League.Id
-		fixture.Season = f.League.Season
-		fixtures = append(fixtures, fixture)
+	r := &GetFixturesResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
+	if err != nil {
+		log.Println(err)
 	}
 
-	return fixtures
+	fixtures := r.toFixtures()
+	return fixtures, nil
 }

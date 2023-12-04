@@ -2,6 +2,7 @@ package top90
 
 import (
 	"encoding/json"
+	"log"
 	"net/url"
 
 	"github.com/wweitzel/top90/internal/api/handlers"
@@ -9,25 +10,28 @@ import (
 
 const teamsUrl = "/teams"
 
-func (c Client) GetTeams(req handlers.GetTeamsRequest) (*handlers.GetTeamsResponse, error) {
+func (c *Client) GetTeams(req handlers.GetTeamsRequest) (*handlers.GetTeamsResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	encoded := url.QueryEscape(string(jsonData))
+	query := "?json=" + url.QueryEscape(string(jsonData))
+	url := apiUrl + teamsUrl + query
 
-	url := apiUrl + teamsUrl + "?json=" + encoded
-	body, err := c.doGet(url)
+	log.Println()
+
+	resp, err := c.http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	r := &handlers.GetTeamsResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
 	if err != nil {
 		return nil, err
 	}
 
-	var response handlers.GetTeamsResponse
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	return &response, nil
+	return r, nil
 }

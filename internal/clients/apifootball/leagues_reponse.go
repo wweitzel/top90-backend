@@ -48,3 +48,18 @@ type GetLeaguesResponse struct {
 		} `json:"seasons"`
 	} `json:"response"`
 }
+
+func (resp *GetLeaguesResponse) toLeagues() []League {
+	var leagues []League
+
+	for _, l := range resp.Data {
+		league := League{}
+		league.Id = l.League.ID
+		league.Logo = l.League.Logo
+		league.Name = l.League.Name
+		league.Type = l.League.Type
+		leagues = append(leagues, league)
+	}
+
+	return leagues
+}

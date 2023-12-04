@@ -33,11 +33,10 @@ func NewClient(awsAccessKey, awsSecretAccessKey string) S3Client {
 
 	s3 := s3.New(session)
 
-	var s3Client S3Client
-	s3Client.session = session
-	s3Client.s3 = s3
-
-	return s3Client
+	return S3Client{
+		session: session,
+		s3:      s3,
+	}
 }
 
 func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {

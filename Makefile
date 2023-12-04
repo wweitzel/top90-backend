@@ -45,6 +45,12 @@ clean:
 	rm -rfv bin/*
 	rm -rfv tmp/*
 
+migrate-down:
+	migrate -database "postgres://admin:admin@localhost:5434/redditsoccergoals?sslmode=disable" -path internal/db/postgres/migrations down
+
+migrate-up:
+	migrate -database "postgres://admin:admin@localhost:5434/redditsoccergoals?sslmode=disable" -path internal/db/postgres/migrations up
+
 seed:
 	go run ./scripts/seed_local_db/...
 	make build-poller
