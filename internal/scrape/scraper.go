@@ -37,13 +37,18 @@ func NewScraper(
 	}
 }
 
-func (s *Scraper) ScrapeNewPosts() {
-	posts := s.redditClient.GetNewPosts()
+func (s *Scraper) ScrapeNewPosts() error {
+	posts, err := s.redditClient.GetNewPosts()
+	if err != nil {
+		return err
+	}
 
 	for _, post := range posts {
 		log.Println("\nprocessing...", post.Data.Id)
 		s.Scrape(post)
 	}
+
+	return nil
 }
 
 func (s *Scraper) Scrape(p reddit.Post) {

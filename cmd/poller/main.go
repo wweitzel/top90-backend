@@ -15,18 +15,18 @@ import (
 )
 
 func main() {
-	log.Println("Starting...")
+	log.Print("Starting...")
 	config := config.Load()
 
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
 	if err != nil {
-		log.Fatalf("Could not setup database: %v", err)
+		log.Fatal("Could not setup database: ", err)
 	}
 
 	s3Client := s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
 	err = s3Client.VerifyConnection(config.AwsBucketName)
 	if err != nil {
-		log.Fatalln("Failed to connect to s3 bucket", err)
+		log.Fatal("Failed to connect to s3 bucket: ", err)
 	}
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
@@ -35,14 +35,17 @@ func main() {
 	ctx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, _ = chromedp.NewContext(ctx)
 	if err := chromedp.Run(ctx); err != nil {
-		log.Fatalf("Coult not setup chromedp: %v", err)
+		log.Fatal("Could not setup chromedp: ", err)
 	}
 
 	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
 	dao := dao.NewPostgresDAO(DB)
 
 	scraper := scrape.NewScraper(ctx, dao, redditClient, s3Client, config.AwsBucketName)
-	scraper.ScrapeNewPosts()
+	err = scraper.ScrapeNewPosts()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Println("Finished.")
+	log.Print("Finished.")
 }

@@ -3,7 +3,6 @@ package apifootball
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/url"
 	"strconv"
 )
@@ -29,7 +28,7 @@ func (c *Client) GetPlayers(league, season int) ([]Player, error) {
 	r := &GetPlayersResponse{}
 	err = json.NewDecoder(resp.Body).Decode(r)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	players := r.toPlayers()

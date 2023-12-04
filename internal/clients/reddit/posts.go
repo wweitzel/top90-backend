@@ -28,59 +28,68 @@ type PostsResponse struct {
 }
 
 // Get newest posts
-func (c *Client) GetNewPosts() []Post {
+func (c *Client) GetNewPosts() ([]Post, error) {
 	url := `https://api.reddit.com/r/soccer/new?include_over_18=on`
-	resp := c.getPosts(url)
+	resp, err := c.getPosts(url)
+	if err != nil {
+		return nil, err
+	}
 
 	posts := resp.Data.Children
 	if len(posts) == 0 {
-		return posts
+		return posts, nil
 	}
 
 	newMediaPosts := mediaPosts(posts)
-	logDataUrls("New links:", newMediaPosts)
+	printUrls("New links:", newMediaPosts)
 
 	posts = supportedPosts(posts)
-	logDataUrls("Supported links:", posts)
-	return posts
+	printUrls("Supported links:", posts)
+	return posts, nil
 }
 
 // Get all posts for a search term
-func (c *Client) GetAllPosts(searchTerm string) []Post {
-	posts := c.getAllPosts(searchTerm)
-	logDataUrls("All links:", posts)
+func (c *Client) GetAllPosts(searchTerm string) ([]Post, error) {
+	posts, err := c.getAllPosts(searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	printUrls("All links:", posts)
 
 	posts = supportedPosts(posts)
-	logDataUrls("Supported links:", posts)
-	return posts
+	printUrls("Supported links:", posts)
+	return posts, nil
 }
 
-func (c *Client) getPosts(url string) *PostsResponse {
+func (c *Client) getPosts(url string) (*PostsResponse, error) {
 	resp, err := c.doGet(url)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	r := &PostsResponse{}
 	err = json.NewDecoder(resp.Body).Decode(r)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	return r
+	return r, nil
 }
 
-func (c *Client) getAllPosts(searchTerm string) []Post {
+func (c *Client) getAllPosts(searchTerm string) ([]Post, error) {
 	var posts []Post
 
 	var resp *PostsResponse
 	resp.Data.After = "start"
 	for resp.Data.After != "" {
 		url := searchUrl(searchTerm, resp.Data.After)
-		resp = c.getPosts(url)
+		resp, err := c.getPosts(url)
+		if err != nil {
+			return nil, err
+		}
 		posts = append(posts, resp.Data.Children...)
 	}
-	return posts
+	return posts, nil
 }
 
 func mediaPosts(posts []Post) []Post {
@@ -132,11 +141,11 @@ func searchUrl(searchTerm string, after string) string {
 		`&include_over_18=on&restrict_sr=on&sort=new&limit=100&after=` + after
 }
 
-func logDataUrls(caption string, posts []Post) {
-	log.Println(caption)
-	log.Println("[")
+func printUrls(caption string, posts []Post) {
+	log.Print(caption)
+	log.Print("[")
 	for _, post := range posts {
-		log.Println("\t" + post.Data.URL + ",")
+		log.Print("\t" + post.Data.URL + ",")
 	}
-	log.Println("]")
+	log.Print("]")
 }
