@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/db"
@@ -39,7 +39,7 @@ func NewGoalHandler(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string) *Goa
 }
 
 func (h *GoalHandler) GetGoal(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+	id := chi.URLParam(r, "id")
 
 	goal, err := h.dao.GetGoal(id)
 	if err != nil {
