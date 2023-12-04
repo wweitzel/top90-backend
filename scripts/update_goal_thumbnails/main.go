@@ -55,12 +55,12 @@ func main() {
 
 func updateThumnnail(goal top90.Goal, bucketName string, videoFilename string, i int) error {
 	s3Client.DownloadFile(goal.S3ObjectKey, bucketName, videoFilename)
-	thumbnailFilename := fmt.Sprintf("tmp/thumb#%d.avif", i)
+	thumbnailFilename := fmt.Sprintf("tmp/thumb#%d.jpg", i)
 	defer os.Remove(thumbnailFilename)
 	defer os.Remove(videoFilename)
 
 	ffmpegPath := os.Getenv("TOP90_FFMPEG_PATH")
-	cmd := exec.Command(ffmpegPath, "-i", videoFilename, "-q:v", "2", "-vframes", "1", thumbnailFilename)
+	cmd := exec.Command(ffmpegPath, "-i", videoFilename, "-q:v", "8", "-vframes", "1", thumbnailFilename)
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
 
@@ -70,7 +70,7 @@ func updateThumnnail(goal top90.Goal, bucketName string, videoFilename string, i
 		return err
 	}
 
-	err = s3Client.UploadFile(thumbnailFilename, goal.ThumbnailS3Key, "image/avif", bucketName)
+	err = s3Client.UploadFile(thumbnailFilename, goal.ThumbnailS3Key, "image/jpg", bucketName)
 	if err != nil {
 		log.Println("s3 upload failed", err)
 	} else {

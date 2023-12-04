@@ -50,7 +50,7 @@ func (l *Loader) insertAndUpload(goal top90.Goal, videoFilename string, thumbnai
 	videoKey := createKey("mp4")
 	goal.S3ObjectKey = videoKey
 
-	thumbnailKey := createKey("avif")
+	thumbnailKey := createKey("jpg")
 	goal.ThumbnailS3Key = thumbnailKey
 
 	log.Println("inserting goal...", goal.RedditFullname)
@@ -67,7 +67,7 @@ func (l *Loader) insertAndUpload(goal top90.Goal, videoFilename string, thumbnai
 		log.Println("Successfully uploaded video to s3", videoKey)
 	}
 
-	err = l.s3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/avif", l.s3BucketName)
+	err = l.s3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/jpg", l.s3BucketName)
 	if err != nil {
 		log.Println("s3 thumbanil upload failed", err)
 	} else {
