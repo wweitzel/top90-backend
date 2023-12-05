@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"log/slog"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -12,20 +11,33 @@ import (
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/db/postgres/dao"
-	top90logger "github.com/wweitzel/top90/internal/logger"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 	"github.com/wweitzel/top90/internal/scrape"
 )
 
 func main() {
-	log.Print("Starting...")
 	config := config.Load()
 
-	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
+	logger := jsonlogger.New(&jsonlogger.Options{
+		Level:    config.LogLevel,
+		Colorize: config.LogColor,
+	})
+
+	DB, err := db.NewPostgresDB(
+		config.DbUser,
+		config.DbPassword,
+		config.DbName,
+		config.DbHost,
+		config.DbPort,
+	)
 	if err != nil {
 		log.Fatal("Could not setup database: ", err)
 	}
 
-	s3Client, err := s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	s3Client, err := s3.NewClient(
+		config.AwsAccessKey,
+		config.AwsSecretAccessKey,
+	)
 	if err != nil {
 		log.Fatal("Failed to create s3 client: ", err)
 	}
@@ -35,8 +47,13 @@ func main() {
 		log.Fatal("Failed to connect to s3 bucket: ", err)
 	}
 
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3830.0 Safari/537.36"),
+	const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) " +
+		"AppleWebKit/537.36 (KHTML, like Gecko) " +
+		"Chrome/77.0.3830.0 Safari/537.36"
+
+	opts := append(
+		chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.UserAgent(userAgent),
 	)
 	ctx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, _ = chromedp.NewContext(ctx)
@@ -44,15 +61,14 @@ func main() {
 		log.Fatal("Could not setup chromedp: ", err)
 	}
 
-	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
+	redditClient := reddit.NewClient(reddit.Config{
+		Timeout: time.Second * 10,
+	})
 	dao := dao.NewPostgresDAO(DB)
 
-	logger := top90logger.New(&slog.HandlerOptions{Level: slog.LevelDebug})
 	scraper := scrape.NewScraper(ctx, dao, redditClient, *s3Client, config.AwsBucketName, logger)
 	err = scraper.ScrapeNewPosts()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	logger.Debug("Finished.")
 }

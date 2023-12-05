@@ -2,12 +2,16 @@ package config
 
 import (
 	"log"
+	"log/slog"
 	"os"
+	"strconv"
 
 	"github.com/wweitzel/top90/internal/config/dotenv"
 )
 
 type Config struct {
+	LogLevel                slog.Leveler
+	LogColor                bool
 	DbUser                  string
 	DbPassword              string
 	DbName                  string
@@ -23,7 +27,7 @@ type Config struct {
 	ApiFootballRapidApiKey  string
 }
 
-// Load env file into struct
+// Load env file into system env variables and struct
 func Load(fileNames ...string) Config {
 	err := dotenv.Load(fileNames...)
 	if err != nil {
@@ -31,6 +35,9 @@ func Load(fileNames ...string) Config {
 	}
 
 	return Config{
+		LogLevel: logLevel(),
+		LogColor: logColor(),
+
 		DbUser:     os.Getenv("TOP90_DB_USER"),
 		DbPassword: os.Getenv("TOP90_DB_PASSWORD"),
 		DbName:     os.Getenv("TOP90_DB_NAME"),
@@ -47,5 +54,33 @@ func Load(fileNames ...string) Config {
 
 		ApiFootballRapidApiHost: os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
 		ApiFootballRapidApiKey:  os.Getenv("API_FOOTBALL_RAPID_API_KEY"),
+	}
+}
+
+func logColor() bool {
+	logColor := os.Getenv("TOP90_LOG_COLOR")
+	if logColor == "" {
+		return false
+	}
+	color, err := strconv.ParseBool(logColor)
+	if err != nil {
+		return false
+	}
+	return color
+}
+
+func logLevel() slog.Leveler {
+	level := os.Getenv("TOP90_LOG_LEVEL")
+	switch level {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
 }

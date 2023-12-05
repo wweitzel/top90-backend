@@ -1,8 +1,5 @@
 package dotenv
 
-// Source:
-// https://github.com/joho/godotenv
-
 // Copyright (c) 2013 John Barton
 //
 // MIT License
@@ -240,7 +237,7 @@ func parseLine(line string, envMap map[string]string) (key string, value string,
 		return
 	}
 
-	// ditch the comments (but keep quoted hashes)
+	// Ditch the comments (but keep quoted hashes)
 	if strings.Contains(line, "#") {
 		segmentsBetweenHashes := strings.Split(line, "#")
 		quotesAreOpen := false
@@ -267,7 +264,7 @@ func parseLine(line string, envMap map[string]string) (key string, value string,
 	firstColon := strings.Index(line, ":")
 	splitString := strings.SplitN(line, "=", 2)
 	if firstColon != -1 && (firstColon < firstEquals || firstEquals == -1) {
-		//this is a yaml-style line
+		// This is a yaml-style line
 		splitString = strings.SplitN(line, ":", 2)
 	}
 
@@ -276,13 +273,11 @@ func parseLine(line string, envMap map[string]string) (key string, value string,
 		return
 	}
 
-	// Parse the key
 	key = splitString[0]
 	key = strings.TrimPrefix(key, "export")
 	key = strings.TrimSpace(key)
 	key = exportRegex.ReplaceAllString(key, "$1")
 
-	// Parse the value
 	value = parseValue(splitString[1], envMap)
 	return
 }
@@ -295,23 +290,21 @@ var (
 )
 
 func parseValue(value string, envMap map[string]string) string {
-
-	// trim
 	value = strings.Trim(value, " ")
 
-	// check if we've got quoted values or possible escapes
+	// Check if we've got quoted values or possible escapes
 	if len(value) > 1 {
 		singleQuotes := singleQuotesRegex.FindStringSubmatch(value)
 
 		doubleQuotes := doubleQuotesRegex.FindStringSubmatch(value)
 
 		if singleQuotes != nil || doubleQuotes != nil {
-			// pull the quotes off the edges
+			// Pull the quotes off the edges
 			value = value[1 : len(value)-1]
 		}
 
 		if doubleQuotes != nil {
-			// expand newlines
+			// Expand newlines
 			value = escapeRegex.ReplaceAllStringFunc(value, func(match string) string {
 				c := strings.TrimPrefix(match, `\`)
 				switch c {
@@ -323,7 +316,7 @@ func parseValue(value string, envMap map[string]string) string {
 					return match
 				}
 			})
-			// unescape characters
+			// Unescape characters
 			value = unescapeCharsRegex.ReplaceAllString(value, "$1")
 		}
 
