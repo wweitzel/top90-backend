@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -45,7 +46,10 @@ func main() {
 	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
 	dao := dao.NewPostgresDAO(DB)
 
-	logger := jsonlogger.New(nil)
+	logger := jsonlogger.New(&jsonlogger.Options{
+		Level:    slog.LevelDebug,
+		Colorize: true,
+	})
 	scraper := scrape.NewScraper(ctx, dao, redditClient, *s3Client, config.AwsBucketName, logger)
 
 	post := reddit.Post{
@@ -56,7 +60,9 @@ func main() {
 			Id                   string
 			Link_flair_css_class string
 		}{
-			URL: "https://streamin.one/v/9f11a946",
+			URL:         "https://dubz.co/v/ca05c6",
+			Created_utc: 1701809991,
+			Title:       `Luton 1 - [2] Arsenal - Gabriel Jesus 45'`,
 		}}
 
 	scraper.Scrape(post)

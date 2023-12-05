@@ -106,7 +106,7 @@ func getSource(nodes []*cdp.Node, url string) string {
 			sourceUrl = "https://streamff.com" + sourceUrl
 		}
 
-		if !strings.HasSuffix(sourceUrl, ".js") {
+		if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
 			return sourceUrl
 		}
 	}
