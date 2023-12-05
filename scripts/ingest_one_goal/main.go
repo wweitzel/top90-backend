@@ -11,7 +11,7 @@ import (
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/db/postgres/dao"
-	top90logger "github.com/wweitzel/top90/internal/logger"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 	"github.com/wweitzel/top90/internal/scrape"
 )
 
@@ -45,7 +45,7 @@ func main() {
 	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
 	dao := dao.NewPostgresDAO(DB)
 
-	logger := top90logger.New(nil)
+	logger := jsonlogger.New(nil)
 	scraper := scrape.NewScraper(ctx, dao, redditClient, *s3Client, config.AwsBucketName, logger)
 
 	post := reddit.Post{

@@ -9,10 +9,16 @@ import (
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/db/postgres/dao"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
 func main() {
 	config := config.Load()
+
+	logger := jsonlogger.New(&jsonlogger.Options{
+		Level:    config.LogLevel,
+		Colorize: config.LogColor,
+	})
 
 	s3Client := initS3Client(
 		config.AwsAccessKey,
@@ -32,7 +38,7 @@ func main() {
 		config)
 
 	port := ":7171"
-	log.Println("Listening on http://127.0.0.1" + port)
+	logger.Info("Listening on http://127.0.0.1" + port)
 	http.ListenAndServe(port, s)
 }
 
