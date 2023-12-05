@@ -37,12 +37,16 @@ func main() {
 }
 
 func initS3Client(accessKey, secretAccessKey, bucketName string) s3.S3Client {
-	s3Client := s3.NewClient(accessKey, secretAccessKey)
-	err := s3Client.VerifyConnection(bucketName)
+	s3Client, err := s3.NewClient(accessKey, secretAccessKey)
+	if err != nil {
+		log.Fatalln("Failed to create s3 client", err)
+	}
+
+	err = s3Client.VerifyConnection(bucketName)
 	if err != nil {
 		log.Fatalln("Failed to connect to s3 bucket", err)
 	}
-	return s3Client
+	return *s3Client
 }
 
 func initDao(user, password, name, host, port string) db.Top90DAO {

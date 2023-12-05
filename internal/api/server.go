@@ -25,6 +25,7 @@ func NewServer(dao db.Top90DAO, s3Client s3.S3Client, config config.Config) *Ser
 		router:   chi.NewRouter(),
 		config:   config,
 	}
+
 	s.routes()
 	return s
 }

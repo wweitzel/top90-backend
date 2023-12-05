@@ -2,7 +2,8 @@ package scrape
 
 import (
 	"context"
-	"log"
+	"io"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -11,18 +12,26 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-type chromeDpScraper struct{}
+type chromeDpScraper struct {
+	logger *slog.Logger
+}
 
-func (chromeDpScraper) getVideoSourceUrl(ctx context.Context, url string) string {
-	var sourceUrl string
+func NewChromDpScraper(logger *slog.Logger) chromeDpScraper {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 
+	return chromeDpScraper{logger: logger}
+}
+
+func (s chromeDpScraper) getVideoSourceUrl(ctx context.Context, url string) string {
 	newTabCtx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
 	newTabCtx, cancel = context.WithTimeout(newTabCtx, 15*time.Second)
 	defer cancel()
 
-	log.Printf("New tab: %s", url)
+	s.logger.Debug("New tab", "url", url)
 
 	var videoNodes []*cdp.Node
 	var sourceNodes []*cdp.Node
@@ -32,51 +41,38 @@ func (chromeDpScraper) getVideoSourceUrl(ctx context.Context, url string) string
 		chromedp.WaitVisible(`body`, chromedp.ByQuery),
 		chromedp.WaitVisible(`video`, chromedp.ByQuery),
 		chromedp.ActionFunc(func(context.Context) error {
-			log.Printf(">>>>>>>>>>>>>>>>>>>> video IS VISIBLE")
+			s.logger.Debug("Video is visible in DOM")
 			return nil
 		}),
 		chromedp.Nodes(`video`, &videoNodes, chromedp.AtLeast(0)),
 		chromedp.Nodes(`source`, &sourceNodes, chromedp.AtLeast(0)),
 	)
+
 	if err != nil {
-		log.Printf("%v %s", err, url)
-	} else {
-		log.Println("chromedp did NOT timeout!")
+		s.logger.Debug("ChromeDP timed out", "url", url, "err", err)
+		return ""
 	}
 
-	if len(videoNodes) > 0 {
-		for _, videoNode := range videoNodes {
-			sourceUrl = getSource(videoNode, url)
-			if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
-				return sourceUrl
-			}
-		}
+	sourceUrl := getSource(videoNodes, url)
+	if len(sourceUrl) > 0 {
+		return sourceUrl
 	}
 
-	if len(sourceNodes) > 0 {
-		for _, sourceNode := range sourceNodes {
-			sourceUrl = getSource(sourceNode, url)
-			if len(sourceUrl) > 0 && !strings.HasSuffix(sourceUrl, ".js") {
-				return sourceUrl
-			}
-		}
-	}
-
-	return ""
+	sourceUrl = getSource(sourceNodes, url)
+	return sourceUrl
 }
 
 // Uses chromedp to scan network for xhr ending in m3u8 and returns that url
-func (chromeDpScraper) getVideoSourceNetwork(ctx context.Context, url string) string {
+func (s chromeDpScraper) getVideoSourceNetwork(ctx context.Context, url string) (string, error) {
 	newTabCtx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
 	newTabCtx, cancel = context.WithTimeout(newTabCtx, 3*time.Second)
 	defer cancel()
 
-	log.Printf("New tab for juststream processing: %s", url)
+	s.logger.Debug("New tab for juststream processing", "url", url)
 
 	var sourceUrl string
-
 	chromedp.ListenTarget(newTabCtx, func(ev interface{}) {
 		if ev, ok := ev.(*network.EventResponseReceived); ok {
 			if ev.Type != "XHR" {
@@ -84,7 +80,7 @@ func (chromeDpScraper) getVideoSourceNetwork(ctx context.Context, url string) st
 			}
 
 			if strings.HasSuffix(ev.Response.URL, "video.m3u8") {
-				log.Println("XHR event had .m3u8 ending:", ev.Response.URL)
+				s.logger.Debug("XHR event had .m3u8 ending", "url", ev.Response.URL)
 				sourceUrl = ev.Response.URL
 				return
 			}
@@ -96,21 +92,23 @@ func (chromeDpScraper) getVideoSourceNetwork(ctx context.Context, url string) st
 		chromedp.Navigate(url),
 	)
 	if err != nil {
-		log.Printf("%v %s", err, url)
+		return "", err
 	}
 
-	return sourceUrl
+	return sourceUrl, nil
 }
 
-func getSource(node *cdp.Node, url string) string {
-	sourceUrl := node.AttributeValue("src")
-	// Sometimes streamff sources are a relative path
-	if strings.HasPrefix(url, "https://streamff") && strings.HasPrefix(sourceUrl, "/uploads") {
-		sourceUrl = "https://streamff.com" + sourceUrl
-	}
-	if len(sourceUrl) > 0 {
-		return sourceUrl
-	}
+func getSource(nodes []*cdp.Node, url string) string {
+	for _, node := range nodes {
+		sourceUrl := node.AttributeValue("src")
+		// Sometimes streamff sources are a relative path
+		if strings.HasPrefix(url, "https://streamff") && strings.HasPrefix(sourceUrl, "/uploads") {
+			sourceUrl = "https://streamff.com" + sourceUrl
+		}
 
+		if !strings.HasSuffix(sourceUrl, ".js") {
+			return sourceUrl
+		}
+	}
 	return ""
 }

@@ -1,9 +1,9 @@
 package scrape
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
+	"io"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -14,66 +14,78 @@ import (
 	"github.com/wweitzel/top90/internal/db"
 )
 
-type Loader struct {
-	dao          db.Top90DAO
-	s3Client     s3.S3Client
-	s3BucketName string
+type loader struct {
+	dao      db.Top90DAO
+	s3Client s3.S3Client
+	s3Bucket string
+	logger   *slog.Logger
+}
+
+func NewLoader(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string, logger *slog.Logger) loader {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
+	return loader{
+		dao:      dao,
+		s3Client: s3Client,
+		s3Bucket: s3Bucket,
+		logger:   logger,
+	}
 }
 
 // Downloads the video, extracts the thumbnail, stores in db + s3
-func (l *Loader) Load(srcUrl string, goal top90.Goal) {
-	video := download(srcUrl)
+func (l *loader) Load(srcUrl string, goal top90.Goal) error {
+	video, err := download(srcUrl)
+	if err != nil {
+		return err
+	}
 	defer video.Close()
 	defer os.Remove(video.Name())
 
 	fi, err := video.Stat()
-
-	log.Printf("file size: %d bytes long", fi.Size())
-
-	if err != nil || fi.Size() < 1 {
-		log.Println("warning: Could not determine file size. This goal will not be stored in the database.")
-		return
+	if err != nil {
+		return err
+	}
+	if fi.Size() < 1 {
+		return fmt.Errorf("empty video file")
 	}
 
-	thumbnail := extractThumbnail(video)
+	thumbnail, err := extractThumbnail(video)
+	if err != nil {
+		return fmt.Errorf("error extracting thumbnail: %v", err)
+	}
 	defer os.Remove(thumbnail)
 
 	err = l.insertAndUpload(goal, video.Name(), thumbnail)
-	if err == sql.ErrNoRows {
-		log.Printf("Already stored goal for fullname %s", goal.RedditFullname)
-	} else if err != nil {
-		log.Printf("Failed to insert goal for fullname %s due to %v", goal.RedditFullname, err)
+	if err != nil {
+		return fmt.Errorf("failed to insert goal for fullname %v: %v", goal.RedditFullname, err)
 	}
+
+	return nil
 }
 
-func (l *Loader) insertAndUpload(goal top90.Goal, videoFilename string, thumbnailFilename string) error {
+func (l *loader) insertAndUpload(goal top90.Goal, videoFilename string, thumbnailFilename string) error {
 	videoKey := createKey("mp4")
 	goal.S3ObjectKey = videoKey
 
 	thumbnailKey := createKey("jpg")
 	goal.ThumbnailS3Key = thumbnailKey
 
-	log.Println("inserting goal...", goal.RedditFullname)
-	createdGoal, err := l.dao.InsertGoal(&goal)
+	_, err := l.dao.InsertGoal(&goal)
 	if err != nil {
 		return err
 	}
-	log.Println("Successfully saved goal in db", createdGoal.Id, goal.RedditFullname)
 
-	err = l.s3Client.UploadFile(videoFilename, videoKey, "video/mp4", l.s3BucketName)
+	err = l.s3Client.UploadFile(videoFilename, videoKey, "video/mp4", l.s3Bucket)
 	if err != nil {
-		log.Println("s3 video upload failed", err)
-	} else {
-		log.Println("Successfully uploaded video to s3", videoKey)
+		return fmt.Errorf("s3 video upload failed: %v", err)
 	}
 
-	err = l.s3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/jpg", l.s3BucketName)
+	err = l.s3Client.UploadFile(thumbnailFilename, thumbnailKey, "image/jpg", l.s3Bucket)
 	if err != nil {
-		log.Println("s3 thumbanil upload failed", err)
-	} else {
-		log.Println("Successfully uploaded thumbnail to s3", thumbnailKey)
+		return fmt.Errorf("s3 thumbnail upload failed: %v", err)
 	}
-
 	return nil
 }
 

@@ -2,7 +2,6 @@ package top90
 
 import (
 	"encoding/json"
-	"log"
 	"net/url"
 
 	"github.com/wweitzel/top90/internal/api/handlers"
@@ -18,8 +17,6 @@ func (c *Client) GetTeams(req handlers.GetTeamsRequest) (*handlers.GetTeamsRespo
 
 	query := "?json=" + url.QueryEscape(string(jsonData))
 	url := apiUrl + teamsUrl + query
-
-	log.Println()
 
 	resp, err := c.http.Get(url)
 	if err != nil {

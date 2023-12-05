@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/wweitzel/top90/internal/clients/apifootball"
@@ -25,10 +24,9 @@ func NewLeagueHandler(dao db.Top90DAO) *LeagueHandler {
 func (h *LeagueHandler) GetLeagues(w http.ResponseWriter, r *http.Request) {
 	leagues, err := h.dao.GetLeagues()
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
-	respond(w, http.StatusOK, GetLeaguesResponse{
-		Leagues: leagues,
-	})
+	ok(w, GetLeaguesResponse{Leagues: leagues})
 }

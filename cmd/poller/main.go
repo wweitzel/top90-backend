@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -11,6 +12,7 @@ import (
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/db/postgres/dao"
+	top90logger "github.com/wweitzel/top90/internal/logger"
 	"github.com/wweitzel/top90/internal/scrape"
 )
 
@@ -23,7 +25,11 @@ func main() {
 		log.Fatal("Could not setup database: ", err)
 	}
 
-	s3Client := s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	s3Client, err := s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	if err != nil {
+		log.Fatal("Failed to create s3 client: ", err)
+	}
+
 	err = s3Client.VerifyConnection(config.AwsBucketName)
 	if err != nil {
 		log.Fatal("Failed to connect to s3 bucket: ", err)
@@ -41,11 +47,12 @@ func main() {
 	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
 	dao := dao.NewPostgresDAO(DB)
 
-	scraper := scrape.NewScraper(ctx, dao, redditClient, s3Client, config.AwsBucketName)
+	logger := top90logger.New(&slog.HandlerOptions{Level: slog.LevelDebug})
+	scraper := scrape.NewScraper(ctx, dao, redditClient, *s3Client, config.AwsBucketName, logger)
 	err = scraper.ScrapeNewPosts()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Print("Finished.")
+	logger.Debug("Finished.")
 }

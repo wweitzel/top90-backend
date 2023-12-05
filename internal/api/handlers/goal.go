@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -43,15 +42,14 @@ func (h *GoalHandler) GetGoal(w http.ResponseWriter, r *http.Request) {
 
 	goal, err := h.dao.GetGoal(id)
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
 	goal.PresignedUrl = h.s3Client.PresignedUrl(goal.S3ObjectKey, h.s3Bucket)
 	goal.ThumbnailPresignedUrl = h.s3Client.PresignedUrl(goal.ThumbnailS3Key, h.s3Bucket)
 
-	respond(w, http.StatusOK, GetGoalResponse{
-		Goal: goal,
-	})
+	ok(w, GetGoalResponse{Goal: goal})
 }
 
 func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +58,7 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 
 	request, err := unmarshal[GetGoalsRequest](json)
 	if err != nil {
-		respond(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		internalServerError(w, err)
 		return
 	}
 
@@ -70,12 +68,14 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 
 	count, err := h.dao.CountGoals(request.Filter)
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
 	goals, err := h.dao.GetGoals(request.Pagination, request.Filter)
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
 	for i := range goals {
@@ -83,8 +83,5 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 		goals[i].ThumbnailPresignedUrl = h.s3Client.PresignedUrl(goals[i].ThumbnailS3Key, h.s3Bucket)
 	}
 
-	respond(w, http.StatusOK, GetGoalsResponse{
-		Goals: goals,
-		Total: count,
-	})
+	ok(w, GetGoalsResponse{Goals: goals, Total: count})
 }

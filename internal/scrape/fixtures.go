@@ -10,20 +10,24 @@ import (
 	"github.com/wweitzel/top90/internal/db"
 )
 
-func (s *Scraper) findFixture(p reddit.Post) (apifootball.Fixture, error) {
+func (s *Scraper) findFixture(p reddit.Post) (*apifootball.Fixture, error) {
 	createdAt := time.Unix(int64(p.Data.Created_utc), 0).UTC()
-	dbFixtures, _ := s.dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
+	dbFixtures, err := s.dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
+	if err != nil {
+		return nil, err
+	}
+
 	teams, _ := s.findTeams(p)
 
 	for _, f := range dbFixtures {
 		for _, t := range teams {
 			if f.Teams.Home.Id == t.Id || f.Teams.Away.Id == t.Id {
-				return f, nil
+				return &f, nil
 			}
 		}
 	}
 
-	return apifootball.Fixture{}, errors.New("could not determine fixture")
+	return nil, nil
 }
 
 func (s *Scraper) findTeams(p reddit.Post) ([]apifootball.Team, error) {

@@ -43,7 +43,7 @@ func (c *Client) GetNewPosts() ([]Post, error) {
 	newMediaPosts := mediaPosts(posts)
 	printUrls("New links:", newMediaPosts)
 
-	posts = supportedPosts(posts)
+	posts = supportedPosts(newMediaPosts)
 	printUrls("Supported links:", posts)
 	return posts, nil
 }

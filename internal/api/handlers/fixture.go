@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -39,17 +38,17 @@ func (h *FixtureHandler) GetFixture(w http.ResponseWriter, r *http.Request) {
 
 	fixtureId, err := strconv.Atoi(id)
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
 	fixture, err := h.dao.GetFixture(fixtureId)
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
-	respond(w, http.StatusOK, GetFixtureResponse{
-		Fixture: fixture,
-	})
+	ok(w, GetFixtureResponse{Fixture: fixture})
 }
 
 func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
@@ -58,12 +57,12 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 
 	request, err := unmarshal[GetFixturesRequest](json)
 	if err != nil {
-		respond(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		internalServerError(w, err)
 		return
 	}
 
 	if request.LeagueId == 0 && !request.TodayOnly {
-		respond(w, http.StatusBadRequest, ErrorResponse{Message: "Bad request. leagueId query param must be set if todayOnly is not true."})
+		badRequest(w, "LeagueId query param must be set if todayOnly is not true.")
 		return
 	}
 
@@ -76,10 +75,9 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 
 	fixtures, err := h.dao.GetFixtures(filter)
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
-	respond(w, http.StatusOK, GetFixturesResponse{
-		Fixtures: fixtures,
-	})
+	ok(w, GetFixturesResponse{Fixtures: fixtures})
 }

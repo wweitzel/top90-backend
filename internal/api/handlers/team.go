@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/wweitzel/top90/internal/clients/apifootball"
@@ -34,7 +33,7 @@ func (h *TeamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 
 	request, err := unmarshal[GetTeamsRequest](json)
 	if err != nil {
-		respond(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		internalServerError(w, err)
 		return
 	}
 
@@ -46,10 +45,9 @@ func (h *TeamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Println(err)
+		internalServerError(w, err)
+		return
 	}
 
-	respond(w, http.StatusOK, GetTeamsResponse{
-		Teams: teams,
-	})
+	ok(w, GetTeamsResponse{Teams: teams})
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -23,20 +22,20 @@ type S3Client struct {
 }
 
 // Create new s3 client
-func NewClient(awsAccessKey, awsSecretAccessKey string) S3Client {
+func NewClient(awsAccessKey, awsSecretAccessKey string) (*S3Client, error) {
 	s3Config := getS3Config(awsAccessKey, awsSecretAccessKey)
 
 	session, err := session.NewSession(s3Config)
 	if err != nil {
-		log.Fatalln("Failed to create aws session", err)
+		return nil, fmt.Errorf("failed to create aws session: %v", err)
 	}
 
 	s3 := s3.New(session)
 
-	return S3Client{
+	return &S3Client{
 		session: session,
 		s3:      s3,
-	}
+	}, nil
 }
 
 func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {
@@ -80,7 +79,7 @@ func (c *S3Client) VerifyConnection(bucketName string) error {
 func (c *S3Client) UploadFile(fileName string, key string, contentType string, bucketName string) error {
 	uploader := s3manager.NewUploader(c.session)
 
-	fileBytes, err := ioutil.ReadFile(fileName)
+	fileBytes, err := os.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}

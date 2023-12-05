@@ -2,7 +2,8 @@ package scrape
 
 import (
 	"context"
-	"log"
+	"io"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -13,11 +14,12 @@ import (
 )
 
 type Scraper struct {
-	ctx           context.Context
-	dao           db.Top90DAO
-	redditClient  reddit.Client
-	s3Client      s3.S3Client
-	s3BuckentName string
+	ctx          context.Context
+	dao          db.Top90DAO
+	redditClient reddit.Client
+	s3Client     s3.S3Client
+	s3Buckent    string
+	logger       *slog.Logger
 }
 
 func NewScraper(
@@ -25,15 +27,20 @@ func NewScraper(
 	dao db.Top90DAO,
 	redditClient reddit.Client,
 	s3Client s3.S3Client,
-	s3BucketName string,
+	s3Bucket string,
+	logger *slog.Logger,
 ) Scraper {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 
 	return Scraper{
-		ctx:           ctx,
-		dao:           dao,
-		redditClient:  redditClient,
-		s3Client:      s3Client,
-		s3BuckentName: s3BucketName,
+		ctx:          ctx,
+		dao:          dao,
+		redditClient: redditClient,
+		s3Client:     s3Client,
+		s3Buckent:    s3Bucket,
+		logger:       logger,
 	}
 }
 
@@ -44,41 +51,50 @@ func (s *Scraper) ScrapeNewPosts() error {
 	}
 
 	for _, post := range posts {
-		log.Println("\nprocessing...", post.Data.Id)
-		s.Scrape(post)
+		s.logger.Debug("Processing... ", "title", post.Data.Title)
+		err := s.Scrape(post)
+		if err != nil {
+			s.logger.Debug("Error scraping post", "post", post)
+		}
 	}
 
 	return nil
 }
 
-func (s *Scraper) Scrape(p reddit.Post) {
+func (s *Scraper) Scrape(p reddit.Post) error {
 	if len(p.Data.Title) > 110 {
-		log.Println("error: post title does not look like the title of a goal post.")
-		return
+		s.logger.Debug("Post title is lnoger than 110 characters")
+		return nil
 	}
 
 	redditFullName := p.Kind + "_" + p.Data.Id
 
 	goalExists, err := s.dao.GoalExists(redditFullName)
 	if err != nil {
-		log.Println("warning:", "could not check if goal exists", err)
-		return
+		return err
 	}
 	if goalExists {
-		log.Println("warning:", "goal already exists", p.Data.Title)
-		return
+		s.logger.Debug("Goal already exists", "title", p.Data.Title)
+		return nil
 	}
 
 	fixture, err := s.findFixture(p)
 	if err != nil {
-		log.Println("warning:", "no fixture found in db for", p.Data.Title)
-		return
+		return err
+	}
+	if fixture == nil {
+		s.logger.Debug("No fixture found in db", "title", p.Data.Title)
+		return nil
 	}
 
-	sourceUrl := s.findVideoSourceUrl(p)
-	log.Println("final source url: ", "[", sourceUrl, "]")
+	sourceUrl, err := s.findVideoSourceUrl(p)
+	if err != nil {
+		return err
+	}
+
+	s.logger.Debug("Final source url: [" + sourceUrl + "]")
 	if sourceUrl == "" {
-		return
+		return nil
 	}
 
 	createdAt := createdTime(p)
@@ -91,31 +107,43 @@ func (s *Scraper) Scrape(p reddit.Post) {
 		FixtureId:           fixture.Id,
 	}
 
-	loader := Loader{
-		dao:          s.dao,
-		s3Client:     s.s3Client,
-		s3BucketName: s.s3BuckentName,
+	loader := NewLoader(
+		s.dao,
+		s.s3Client,
+		s.s3Buckent,
+		s.logger,
+	)
+
+	err = loader.Load(sourceUrl, goal)
+	if err != nil {
+		return err
 	}
 
-	loader.Load(sourceUrl, goal)
+	s.logger.Debug("Successfully loaded goal into db", "title", p.Data.Title)
+	return nil
 }
 
-func (s *Scraper) findVideoSourceUrl(p reddit.Post) string {
-	sourceUrl := collyscraper{}.getVideoSourceUrl(p.Data.URL)
+func (s *Scraper) findVideoSourceUrl(p reddit.Post) (string, error) {
+	collyScraper := NewCollyScraper(s.logger)
+	sourceUrl := collyScraper.getVideoSourceUrl(p.Data.URL)
 
+	chromeDpScraper := NewChromDpScraper(s.logger)
 	if len(sourceUrl) == 0 {
-		sourceUrl = chromeDpScraper{}.getVideoSourceUrl(s.ctx, p.Data.URL)
+		sourceUrl = chromeDpScraper.getVideoSourceUrl(s.ctx, p.Data.URL)
 	}
 
 	if strings.HasPrefix(sourceUrl, "blob") && strings.Contains(p.Data.URL, "juststream") {
-		sourceUrl = chromeDpScraper{}.getVideoSourceNetwork(s.ctx, p.Data.URL)
+		var err error
+		sourceUrl, err = chromeDpScraper.getVideoSourceNetwork(s.ctx, p.Data.URL)
+		if err != nil {
+			return "", err
+		}
 	} else if strings.HasPrefix(sourceUrl, "blob") {
 		// TODO: Need a way to download from any blob, not just juststream
 		//   For now, just set to empty string since we cant handle other blobs
 		sourceUrl = ""
 	}
-
-	return sourceUrl
+	return sourceUrl, nil
 }
 
 func createdTime(p reddit.Post) time.Time {
