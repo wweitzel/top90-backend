@@ -1,18 +1,29 @@
 package scrape
 
 import (
+	"io"
+	"log/slog"
 	"strings"
 
 	"github.com/gocolly/colly"
 )
 
-type collyscraper struct{}
+type collyScraper struct {
+	logger *slog.Logger
+}
 
-func (collyscraper) getVideoSourceUrl(url string) string {
-	var sourceUrl string
+func NewCollyScraper(logger *slog.Logger) collyScraper {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 
+	return collyScraper{logger: logger}
+}
+
+func (collyScraper) getVideoSourceUrl(url string) string {
 	c := colly.NewCollector()
 
+	var sourceUrl string
 	switch {
 	case strings.HasPrefix(url, "https://streamable"):
 		c.OnHTML("video", func(e *colly.HTMLElement) {
@@ -30,6 +41,5 @@ func (collyscraper) getVideoSourceUrl(url string) string {
 	}
 
 	c.Visit(url)
-
 	return sourceUrl
 }

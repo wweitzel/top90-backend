@@ -15,7 +15,7 @@ import (
 )
 
 var pgDAO db.Top90DAO
-var s3Client s3.S3Client
+var s3Client *s3.S3Client
 
 func main() {
 	log.SetFlags(log.Ltime)
@@ -28,7 +28,10 @@ func main() {
 	}
 	defer DB.Close()
 
-	s3Client = s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	s3Client, err = s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	if err != nil {
+		log.Fatalln("Failed to create s3 client", err)
+	}
 	err = s3Client.VerifyConnection(config.AwsBucketName)
 	if err != nil {
 		log.Fatalln("Failed to connect to s3 bucket", err)

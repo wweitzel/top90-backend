@@ -2,7 +2,6 @@ package scrape
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -10,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func extractThumbnail(video *os.File) (filename string) {
+func extractThumbnail(video *os.File) (filename string, err error) {
 	randomId := uuid.NewString()
 	randomId = strings.Replace(randomId, "-", "", -1)
 	thumbnailFilename := fmt.Sprintf("tmp/%s.jpg", randomId)
@@ -20,10 +19,10 @@ func extractThumbnail(video *os.File) (filename string) {
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
-		log.Println("warning: error generating thumbnail with ffpmeg", err)
+		return "", err
 	}
 
-	return thumbnailFilename
+	return thumbnailFilename, nil
 }
