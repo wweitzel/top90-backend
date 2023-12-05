@@ -107,12 +107,16 @@ func supportedPosts(posts []Post) []Post {
 
 	var filteredPosts []Post
 	for _, post := range posts {
+		supported := true
 		for _, unsupportedDomain := range unsupportedDomains {
 			if strings.Contains(post.Data.URL, unsupportedDomain) {
+				supported = false
 				break
 			}
 		}
-		filteredPosts = append(filteredPosts, post)
+		if supported {
+			filteredPosts = append(filteredPosts, post)
+		}
 	}
 	return filteredPosts
 }
