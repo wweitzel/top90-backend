@@ -2,21 +2,21 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/golang-migrate/migrate/v4"
-	pg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/wweitzel/top90/internal/api/handlers"
 	"github.com/wweitzel/top90/internal/clients/top90"
+	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/db/postgres/dao"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
 type seed struct {
@@ -24,37 +24,27 @@ type seed struct {
 	client top90.Client
 }
 
+var logger *slog.Logger
+
 func main() {
 	config := config.Load()
+	logger = jsonlogger.New(&jsonlogger.Options{
+		Level:    config.LogLevel,
+		Colorize: config.LogColor,
+	})
 
-	DB, err := db.NewPostgresDB("admin", "admin", "redditsoccergoals", "localhost", config.DbPort)
-	if err != nil {
-		log.Fatalln("Could not setup database:", err)
-	}
+	init := cmd.NewInit(logger)
 
-	driver, err := pg.WithInstance(DB, &pg.Config{})
-	if err != nil {
-		log.Fatalln("Could not setup database driver:", err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/db/postgres/migrations",
-		"postgres", driver)
-	if err != nil {
-		log.Fatalln("Could not instantiate migrate:", err)
-	}
+	db := init.DB("admin", "admin", "redditsoccergoals", "localhost", config.DbPort)
+	dao := init.Dao(db)
+	m := init.Migrate(db)
 
 	m.Down()
 	m.Up()
 
-	dao := dao.NewPostgresDAO(DB)
-
-	top90Client := top90.NewClient(top90.Config{
-		Timeout: 10 * time.Second,
-	})
+	top90Client := init.Top90Client(10 * time.Second)
 
 	seed := seed{dao, top90Client}
-
 	seed.createS3Bucket("reddit-soccer-goals", "us-east-1", "test", "test", "http://localhost:4566")
 	seed.createLeagues(top90Client, dao)
 	seed.createTeams(top90Client, dao)
@@ -64,14 +54,15 @@ func main() {
 func (seed) createLeagues(client top90.Client, dao db.Top90DAO) {
 	resp, err := client.GetLeagues()
 	if err != nil {
-		log.Fatalln(err)
+		exit("Failed getting leagues", err)
 	}
 
 	for _, league := range resp.Leagues {
-		log.Println(league.Name)
+		logger.Info(league.Name)
+
 		_, err := dao.InsertLeague(&league)
 		if err != nil && err != sql.ErrNoRows {
-			log.Fatalln("Could not insert league:", err)
+			exit("Failed inserting league", err)
 		}
 	}
 }
@@ -79,14 +70,15 @@ func (seed) createLeagues(client top90.Client, dao db.Top90DAO) {
 func (seed) createTeams(client top90.Client, dao db.Top90DAO) {
 	resp, err := client.GetTeams(handlers.GetTeamsRequest{})
 	if err != nil {
-		log.Fatalln(err)
+		exit("Failed getting teams", err)
 	}
 
 	for _, team := range resp.Teams {
-		log.Println(team.Name)
+		logger.Info(team.Name)
+
 		_, err := dao.InsertTeam(&team)
 		if err != nil && err != sql.ErrNoRows {
-			log.Fatalln("Could not insert team:", err)
+			exit("Failed inserting team", err)
 		}
 	}
 }
@@ -96,14 +88,15 @@ func (seed) createFixtures(client top90.Client, dao db.Top90DAO) {
 		TodayOnly: true,
 	})
 	if err != nil {
-		log.Fatalln(err)
+		exit("Failed getting fixutes", err)
 	}
 
 	for _, fixture := range resp.Fixtures {
-		log.Println(fixture.Date)
+		logger.Info("Fixture", "teams", fixture.Teams)
+
 		_, err := dao.InsertFixture(&fixture)
 		if err != nil && err != sql.ErrNoRows {
-			log.Fatalln("Could not insert fixture:", err)
+			exit("Failed inserting fixture", err)
 		}
 	}
 }
@@ -116,7 +109,7 @@ func (seed) createS3Bucket(bucketName, region, accessKey, secretKey, endpoint st
 		Endpoint:         aws.String(endpoint),
 	})
 	if err != nil {
-		log.Fatalln("Could not create s3 bucket:", err)
+		exit("Failed creating s3 session", err)
 	}
 
 	s3Client := s3.New(sess)
@@ -127,6 +120,11 @@ func (seed) createS3Bucket(bucketName, region, accessKey, secretKey, endpoint st
 
 	_, err = s3Client.CreateBucket(input)
 	if err != nil {
-		log.Fatalln("Could not create s3 bucket:", err)
+		exit("Failed creating s3 bucket", err)
 	}
+}
+
+func exit(msg string, err error) {
+	logger.Error(msg, "error", err)
+	os.Exit(1)
 }

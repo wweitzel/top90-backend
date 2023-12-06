@@ -3,8 +3,8 @@ package s3
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"log"
+	"io"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -19,15 +19,25 @@ import (
 type S3Client struct {
 	session *session.Session
 	s3      *s3.S3
+	logger  *slog.Logger
 }
 
-// Create new s3 client
-func NewClient(awsAccessKey, awsSecretAccessKey string) (*S3Client, error) {
-	s3Config := getS3Config(awsAccessKey, awsSecretAccessKey)
+type Config struct {
+	AccessKey       string
+	SecretAccessKey string
+	Endpoint        string
+	Logger          *slog.Logger
+}
 
-	session, err := session.NewSession(s3Config)
+func NewClient(cfg Config) (*S3Client, error) {
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
+	awsConfig := awsConfig(cfg)
+	session, err := session.NewSession(awsConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws session: %v", err)
+		return nil, err
 	}
 
 	s3 := s3.New(session)
@@ -35,35 +45,30 @@ func NewClient(awsAccessKey, awsSecretAccessKey string) (*S3Client, error) {
 	return &S3Client{
 		session: session,
 		s3:      s3,
+		logger:  cfg.Logger,
 	}, nil
 }
 
-func getS3Config(awsAccessKey, awsSecretAccessKey string) *aws.Config {
-	// TODO: Should pass in a config to NewClient insttead of doing this here
-	if os.Getenv("ENV") == "dev" {
-		return &aws.Config{
-			Region:           aws.String("us-east-1"),
-			Endpoint:         aws.String(os.Getenv("TOP90_AWS_S3_ENDPOINT")),
-			S3ForcePathStyle: aws.Bool(true),
-			Credentials: credentials.NewStaticCredentials(
-				awsAccessKey,
-				awsSecretAccessKey, ""),
-		}
-	} else if os.Getenv("ENV") == "prod" {
+func awsConfig(cfg Config) *aws.Config {
+	if cfg.Endpoint == "" {
 		return &aws.Config{
 			Region: aws.String("us-east-1"),
 			Credentials: credentials.NewStaticCredentials(
-				awsAccessKey,
-				awsSecretAccessKey, ""),
+				cfg.AccessKey,
+				cfg.SecretAccessKey, ""),
 		}
-	} else {
-		log.Fatalln("environment variable ENV must be set")
-		os.Exit(1)
-		return nil
+	}
+
+	return &aws.Config{
+		Region:           aws.String("us-east-1"),
+		Endpoint:         aws.String(os.Getenv("TOP90_AWS_S3_ENDPOINT")),
+		S3ForcePathStyle: aws.Bool(true),
+		Credentials: credentials.NewStaticCredentials(
+			cfg.AccessKey,
+			cfg.SecretAccessKey, ""),
 	}
 }
 
-// Call s3.HeadBucket to verify top90 bucket exists and we have permission to view it
 func (c *S3Client) VerifyConnection(bucketName string) error {
 	input := &s3.HeadBucketInput{
 		Bucket: aws.String(bucketName),
@@ -75,13 +80,10 @@ func (c *S3Client) VerifyConnection(bucketName string) error {
 	return nil
 }
 
-// Upload a file to s3
 func (c *S3Client) UploadFile(fileName string, key string, contentType string, bucketName string) error {
-	uploader := s3manager.NewUploader(c.session)
-
 	fileBytes, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	upInput := &s3manager.UploadInput{
@@ -91,6 +93,7 @@ func (c *S3Client) UploadFile(fileName string, key string, contentType string, b
 		ContentType: aws.String(contentType),
 	}
 
+	uploader := s3manager.NewUploader(c.session)
 	_, err = uploader.UploadWithContext(context.Background(), upInput)
 	if err != nil {
 		return err
@@ -99,80 +102,53 @@ func (c *S3Client) UploadFile(fileName string, key string, contentType string, b
 	return nil
 }
 
-// Download a file from s3
-func (c *S3Client) DownloadFile(key, bucket, outputFilename string) {
-	downloader := s3manager.NewDownloader(c.session)
-
+func (c *S3Client) DownloadFile(key, bucket, outputFilename string) error {
 	file, err := os.Create(outputFilename)
 	if err != nil {
-		log.Println("Unable to open file", outputFilename, err)
+		return err
 	}
 	defer file.Close()
 
-	numBytes, err := downloader.Download(file,
-		&s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-		})
-
-	if err != nil {
-		log.Println("Unable to download item", key, err)
-	}
-
-	log.Println("Downloaded", file.Name(), numBytes, "bytes")
-}
-
-func (c *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, error) {
 	downloader := s3manager.NewDownloader(c.session)
-
-	buf := aws.NewWriteAtBuffer([]byte{})
-	numBytes, err := downloader.Download(buf, &s3.GetObjectInput{
+	_, err = downloader.Download(file, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
+	return err
+}
 
+func (c *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, error) {
+	buf := aws.NewWriteAtBuffer([]byte{})
+	downloader := s3manager.NewDownloader(c.session)
+	_, err := downloader.Download(buf, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
 	if err != nil {
-		log.Println("Unable to download item", key, err)
 		return nil, err
 	}
-
-	log.Println("Downloaded", key, numBytes, "bytes")
 	return buf.Bytes(), nil
 }
 
-// Delete a file on s3
 func (c *S3Client) DeleteFile(key string, bucketName string) error {
 	_, err := c.s3.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(key),
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-// Create a presigned download url with an expiration time
-func (c *S3Client) NewSignedGetURL(key string, bucket string, expire time.Duration) (string, error) {
+func (c *S3Client) PresignedUrl(key string, bucket string, expire time.Duration) (string, error) {
 	req, _ := c.s3.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
-
 	url, err := req.Presign(expire)
 	if err != nil {
-		return "", fmt.Errorf(key, err)
+		return "", err
 	}
 
 	// When running in docker locally, host.docker.internal will be in the url
 	result := strings.Replace(url, "host.docker.internal", "localhost", -1)
 	return result, nil
-}
-
-func (c *S3Client) PresignedUrl(objectKey string, bucket string) string {
-	url, err := c.NewSignedGetURL(objectKey, bucket, time.Minute*10)
-	if err != nil {
-		log.Println(err)
-	}
-	return url
 }

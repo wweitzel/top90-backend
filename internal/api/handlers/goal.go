@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	top90 "github.com/wweitzel/top90/internal"
@@ -29,6 +30,8 @@ type GoalHandler struct {
 	s3Bucket string
 }
 
+const presignedExpirationTime = 10 * time.Minute
+
 func NewGoalHandler(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string) *GoalHandler {
 	return &GoalHandler{
 		dao:      dao,
@@ -46,8 +49,8 @@ func (h *GoalHandler) GetGoal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	goal.PresignedUrl = h.s3Client.PresignedUrl(goal.S3ObjectKey, h.s3Bucket)
-	goal.ThumbnailPresignedUrl = h.s3Client.PresignedUrl(goal.ThumbnailS3Key, h.s3Bucket)
+	goal.PresignedUrl, _ = h.s3Client.PresignedUrl(goal.S3ObjectKey, h.s3Bucket, presignedExpirationTime)
+	goal.ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goal.ThumbnailS3Key, h.s3Bucket, presignedExpirationTime)
 
 	ok(w, GetGoalResponse{Goal: goal})
 }
@@ -79,8 +82,8 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range goals {
-		goals[i].PresignedUrl = h.s3Client.PresignedUrl(goals[i].S3ObjectKey, h.s3Bucket)
-		goals[i].ThumbnailPresignedUrl = h.s3Client.PresignedUrl(goals[i].ThumbnailS3Key, h.s3Bucket)
+		goals[i].PresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].S3ObjectKey, h.s3Bucket, presignedExpirationTime)
+		goals[i].ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].ThumbnailS3Key, h.s3Bucket, presignedExpirationTime)
 	}
 
 	ok(w, GetGoalsResponse{Goals: goals, Total: count})

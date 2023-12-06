@@ -15,7 +15,8 @@ import (
 func TestGetGoals(t *testing.T) {
 	t.Parallel()
 
-	dao, pool, resource := setup()
+	dao, pool, resource, err := createTestDb()
+	assert.NilError(t, err)
 	defer pool.Purge(resource)
 
 	now := time.Now()
@@ -88,7 +89,8 @@ func TestGetGoals(t *testing.T) {
 func TestGetFixtures(t *testing.T) {
 	t.Parallel()
 
-	dao, pool, resource := setup()
+	dao, pool, resource, err := createTestDb()
+	assert.NilError(t, err)
 	defer pool.Purge(resource)
 
 	now := time.Now()
@@ -154,10 +156,11 @@ func TestGetFixtures(t *testing.T) {
 func TestGetTeams(t *testing.T) {
 	t.Parallel()
 
-	dao, pool, resource := setup()
+	dao, pool, resource, err := createTestDb()
+	assert.NilError(t, err)
 	defer pool.Purge(resource)
 
-	_, err := dao.InsertTeam(&apifootball.Team{
+	_, err = dao.InsertTeam(&apifootball.Team{
 		Id:      1,
 		Name:    "team1",
 		Country: "usa",
@@ -186,24 +189,14 @@ func TestGetTeams(t *testing.T) {
 	assert.Equal(t, teams[0].Id, 1)
 }
 
-func assertEqual(t *testing.T, actual top90.Goal, expected top90.Goal) {
-	assert.Equal(t, actual.Id, expected.Id)
-	assert.Equal(t, actual.RedditFullname, expected.RedditFullname)
-	assert.Equal(t, actual.RedditLinkUrl, expected.RedditLinkUrl)
-	assert.Equal(t, actual.RedditPostTitle, expected.RedditPostTitle)
-	assert.Equal(t, actual.S3ObjectKey, expected.S3ObjectKey)
-	// TODO: Figure out why the bwlow assertion fails
-	// assert.Equal(t, actual.RedditPostCreatedAt, expected.RedditPostCreatedAt)
-	assert.Equal(t, actual.ThumbnailS3Key, expected.ThumbnailS3Key)
-}
-
 func TestGetLeagues(t *testing.T) {
 	t.Parallel()
 
-	dao, pool, resource := setup()
+	dao, pool, resource, err := createTestDb()
+	assert.NilError(t, err)
 	defer pool.Purge(resource)
 
-	_, err := dao.InsertLeague(&apifootball.League{
+	_, err = dao.InsertLeague(&apifootball.League{
 		Id:   1,
 		Name: "premier league",
 	})
@@ -217,4 +210,15 @@ func TestGetLeagues(t *testing.T) {
 
 	leagues, _ := dao.GetLeagues()
 	assert.Equal(t, len(leagues), 2)
+}
+
+func assertEqual(t *testing.T, actual top90.Goal, expected top90.Goal) {
+	assert.Equal(t, actual.Id, expected.Id)
+	assert.Equal(t, actual.RedditFullname, expected.RedditFullname)
+	assert.Equal(t, actual.RedditLinkUrl, expected.RedditLinkUrl)
+	assert.Equal(t, actual.RedditPostTitle, expected.RedditPostTitle)
+	assert.Equal(t, actual.S3ObjectKey, expected.S3ObjectKey)
+	// TODO: Figure out why the bwlow assertion fails
+	// assert.Equal(t, actual.RedditPostCreatedAt, expected.RedditPostCreatedAt)
+	assert.Equal(t, actual.ThumbnailS3Key, expected.ThumbnailS3Key)
 }

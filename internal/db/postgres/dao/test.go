@@ -3,7 +3,6 @@ package dao
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -13,15 +12,15 @@ import (
 	"github.com/wweitzel/top90/internal/db"
 )
 
-func setup() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) {
-	pool, err := dockertest.NewPool("")
+func createTestDb() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource, err error) {
+	pool, err = dockertest.NewPool("")
 	if err != nil {
-		log.Fatalf("Could not construct pool: %s", err)
+		return nil, &dockertest.Pool{}, &dockertest.Resource{}, fmt.Errorf("could not construct pool: %v", err)
 	}
 
 	err = pool.Client.Ping()
 	if err != nil {
-		log.Fatalf("Could not connect to Docker: %s", err)
+		return nil, pool, &dockertest.Resource{}, fmt.Errorf("could not connect to docker: %v", err)
 	}
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
@@ -37,9 +36,8 @@ func setup() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) 
 		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 	})
-
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		return nil, pool, nil, fmt.Errorf("could not start resource: %v", err)
 	}
 
 	hostAndPort := resource.GetHostPort("5432/tcp")
@@ -51,14 +49,16 @@ func setup() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) 
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	pool.MaxWait = 120 * time.Second
-	if err = pool.Retry(func() error {
+	err = pool.Retry(func() error {
 		db, err = sql.Open("postgres", databaseUrl)
 		if err != nil {
 			return err
 		}
 		return db.Ping()
-	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+	})
+	if err != nil {
+		pool.Purge(resource)
+		return nil, pool, resource, fmt.Errorf("could not connect to docker: %v", err)
 	}
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
@@ -68,9 +68,11 @@ func setup() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource) 
 		"file://../migrations",
 		"postgres", driver)
 
-	if err := mig.Up(); err != nil {
-		log.Fatal(err)
+	err = mig.Up()
+	if err != nil {
+		pool.Purge(resource)
+		return nil, pool, resource, fmt.Errorf("could not migrate database: %v", err)
 	}
 
-	return NewPostgresDAO(db), pool, resource
+	return NewPostgresDAO(db), pool, resource, nil
 }

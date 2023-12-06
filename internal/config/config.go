@@ -1,12 +1,12 @@
 package config
 
 import (
-	"log"
 	"log/slog"
 	"os"
 	"strconv"
 
 	"github.com/wweitzel/top90/internal/config/dotenv"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
 type Config struct {
@@ -31,7 +31,7 @@ type Config struct {
 func Load(fileNames ...string) Config {
 	err := dotenv.Load(fileNames...)
 	if err != nil {
-		log.Println("No local .env found. Will use existing system environment variables.")
+		jsonlogger.New(nil).Info("No local .env found. Will use existing system environment variables.")
 	}
 
 	return Config{
@@ -49,8 +49,7 @@ func Load(fileNames ...string) Config {
 		AwsBucketName:      os.Getenv("TOP90_AWS_BUCKET_NAME"),
 		AwsS3Endpoint:      os.Getenv("TOP90_AWS_S3_ENDPOINT"),
 
-		RedditBasicAuth: os.Getenv("TOP90_REDDIT_BASIC_AUTH"),
-		FFmpegPath:      os.Getenv("TOP90_FFMPEG_PATH"),
+		FFmpegPath: os.Getenv("TOP90_FFMPEG_PATH"),
 
 		ApiFootballRapidApiHost: os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
 		ApiFootballRapidApiKey:  os.Getenv("API_FOOTBALL_RAPID_API_KEY"),

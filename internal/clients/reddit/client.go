@@ -4,18 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
+	"log/slog"
 	"net/http"
 	"time"
 )
 
 type Client struct {
-	http  http.Client
-	token AccessToken
+	http   http.Client
+	token  AccessToken
+	logger *slog.Logger
 }
 
 type Config struct {
 	Timeout time.Duration
+	Logger  *slog.Logger
 }
 
 type AccessToken struct {
@@ -26,9 +29,12 @@ type AccessToken struct {
 	Scope     string `json:"scope"`
 }
 
-func NewClient(cfg Config) Client {
+func NewClient(cfg Config) (*Client, error) {
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 10 * time.Second
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	c := http.Client{Timeout: cfg.Timeout}
@@ -37,7 +43,7 @@ func NewClient(cfg Config) Client {
 	body := bytes.NewBuffer([]byte("grant_type=client_credentials"))
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	req.Header.Add("User-Agent", "browser:top90:v0.0 (by /u/top90app)")
@@ -46,20 +52,21 @@ func NewClient(cfg Config) Client {
 
 	resp, err := c.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed getting reddit access token")
 	}
 	defer resp.Body.Close()
 
 	token := &AccessToken{}
 	err = json.NewDecoder(resp.Body).Decode(token)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to decode reddit access token")
 	}
 
-	return Client{
-		http:  c,
-		token: *token,
-	}
+	return &Client{
+		http:   c,
+		token:  *token,
+		logger: cfg.Logger,
+	}, nil
 }
 
 func (c *Client) doGet(url string) (*http.Response, error) {
