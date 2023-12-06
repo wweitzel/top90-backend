@@ -72,7 +72,7 @@ var leagueColumns = LeagueColumns{
 	Name:          "name",
 	Type:          "type",
 	Logo:          "logo",
-	CurrentSeason: "current_sesson",
+	CurrentSeason: "current_season",
 }
 
 var teamColumns = TeamColumns{
