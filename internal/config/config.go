@@ -21,7 +21,6 @@ type Config struct {
 	AwsSecretAccessKey      string
 	AwsBucketName           string
 	AwsS3Endpoint           string
-	RedditBasicAuth         string
 	FFmpegPath              string
 	ApiFootballRapidApiHost string
 	ApiFootballRapidApiKey  string
