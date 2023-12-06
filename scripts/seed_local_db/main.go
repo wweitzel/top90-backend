@@ -109,7 +109,7 @@ func (seed) createFixtures(client top90.Client, dao db.Top90DAO) {
 	}
 
 	for _, fixture := range resp.Fixtures {
-		logger.Info(fixture.Date.String())
+		logger.Info("Fixture", "teams", fixture.Teams)
 
 		_, err := dao.InsertFixture(&fixture)
 		if err != nil && err != sql.ErrNoRows {
