@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -16,22 +16,31 @@ import (
 	"github.com/wweitzel/top90/internal/scrape"
 )
 
+var logger = jsonlogger.New(&jsonlogger.Options{
+	Level:    slog.LevelDebug,
+	Colorize: true,
+})
+
 func main() {
 	config := config.Load()
 
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
 	if err != nil {
-		log.Fatalf("Could not setup database: %v", err)
+		exit("Failed setting database", err)
 	}
 
-	s3Client, err := s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	s3Client, err := s3.NewClient(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+	})
 	if err != nil {
-		log.Fatalln("Failed to create s3 client", err)
+		exit("Failed creating s3 client", err)
 	}
 
 	err = s3Client.VerifyConnection(config.AwsBucketName)
 	if err != nil {
-		log.Fatalln("Failed to connect to s3 bucket", err)
+		exit("Failed connecting to s3 bucket", err)
 	}
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
@@ -40,17 +49,16 @@ func main() {
 	ctx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, _ = chromedp.NewContext(ctx)
 	if err := chromedp.Run(ctx); err != nil {
-		log.Fatalf("Coult not setup chromedp: %v", err)
+		exit("Failed setting up chromedp", err)
 	}
 
-	redditClient := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
-	dao := dao.NewPostgresDAO(DB)
+	redditClient, err := reddit.NewClient(reddit.Config{Timeout: time.Second * 10})
+	if err != nil {
+		exit("Failed creating reddit client", err)
+	}
 
-	logger := jsonlogger.New(&jsonlogger.Options{
-		Level:    slog.LevelDebug,
-		Colorize: true,
-	})
-	scraper := scrape.NewScraper(ctx, dao, redditClient, *s3Client, config.AwsBucketName, logger)
+	dao := dao.NewPostgresDAO(DB)
+	scraper := scrape.NewScraper(ctx, dao, *redditClient, *s3Client, config.AwsBucketName, logger)
 
 	post := reddit.Post{
 		Data: struct {
@@ -66,4 +74,9 @@ func main() {
 		}}
 
 	scraper.Scrape(post)
+}
+
+func exit(msg string, err error) {
+	logger.Error(msg, "error", err)
+	os.Exit(1)
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -31,20 +31,24 @@ func main() {
 		config.DbPort,
 	)
 	if err != nil {
-		log.Fatal("Could not setup database: ", err)
+		logger.Error("Failed connecting to database", "error", err)
+		os.Exit(1)
 	}
 
-	s3Client, err := s3.NewClient(
-		config.AwsAccessKey,
-		config.AwsSecretAccessKey,
-	)
+	s3Client, err := s3.NewClient(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+	})
 	if err != nil {
-		log.Fatal("Failed to create s3 client: ", err)
+		logger.Error("Failed creating s3 client", "error", err)
+		os.Exit(1)
 	}
 
 	err = s3Client.VerifyConnection(config.AwsBucketName)
 	if err != nil {
-		log.Fatal("Failed to connect to s3 bucket: ", err)
+		logger.Error("Failed connecting to s3 bucket", "error", err)
+		os.Exit(1)
 	}
 
 	const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) " +
@@ -57,18 +61,27 @@ func main() {
 	)
 	ctx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, _ = chromedp.NewContext(ctx)
-	if err := chromedp.Run(ctx); err != nil {
-		log.Fatal("Could not setup chromedp: ", err)
+	err = chromedp.Run(ctx)
+	if err != nil {
+		logger.Error("Failed initializing chromedp", "error", err)
+		os.Exit(1)
 	}
 
-	redditClient := reddit.NewClient(reddit.Config{
+	redditClient, err := reddit.NewClient(reddit.Config{
 		Timeout: time.Second * 10,
+		Logger:  logger,
 	})
+	if err != nil {
+		logger.Error("Failed creating reddit client", "error", err)
+		os.Exit(1)
+	}
+
 	dao := dao.NewPostgresDAO(DB)
 
-	scraper := scrape.NewScraper(ctx, dao, redditClient, *s3Client, config.AwsBucketName, logger)
+	scraper := scrape.NewScraper(ctx, dao, *redditClient, *s3Client, config.AwsBucketName, logger)
 	err = scraper.ScrapeNewPosts()
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("Failed scraping new posts", "error", err)
+		os.Exit(1)
 	}
 }

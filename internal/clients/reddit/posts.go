@@ -2,7 +2,6 @@ package reddit
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
 )
 
@@ -41,10 +40,10 @@ func (c *Client) GetNewPosts() ([]Post, error) {
 	}
 
 	newMediaPosts := mediaPosts(posts)
-	printUrls("New links:", newMediaPosts)
+	c.logUrls("New links:", newMediaPosts)
 
 	posts = supportedPosts(newMediaPosts)
-	printUrls("Supported links:", posts)
+	c.logUrls("Supported links:", posts)
 	return posts, nil
 }
 
@@ -54,10 +53,10 @@ func (c *Client) GetAllPosts(searchTerm string) ([]Post, error) {
 	if err != nil {
 		return nil, err
 	}
-	printUrls("All links:", posts)
+	c.logUrls("All links:", posts)
 
 	posts = supportedPosts(posts)
-	printUrls("Supported links:", posts)
+	c.logUrls("Supported links:", posts)
 	return posts, nil
 }
 
@@ -145,11 +144,10 @@ func searchUrl(searchTerm string, after string) string {
 		`&include_over_18=on&restrict_sr=on&sort=new&limit=100&after=` + after
 }
 
-func printUrls(caption string, posts []Post) {
-	log.Print(caption)
-	log.Print("[")
+func (c *Client) logUrls(caption string, posts []Post) {
+	var dataUrls []string
 	for _, post := range posts {
-		log.Print("\t" + post.Data.URL + ",")
+		dataUrls = append(dataUrls, post.Data.URL)
 	}
-	log.Print("]")
+	c.logger.Info(caption, "urls", dataUrls)
 }

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/wweitzel/top90/internal/api"
 	"github.com/wweitzel/top90/internal/clients/s3"
@@ -12,45 +13,54 @@ import (
 	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
+var logger *slog.Logger
+
 func main() {
 	config := config.Load()
 
-	logger := jsonlogger.New(&jsonlogger.Options{
+	logger = jsonlogger.New(&jsonlogger.Options{
 		Level:    config.LogLevel,
 		Colorize: config.LogColor,
 	})
 
-	s3Client := initS3Client(
-		config.AwsAccessKey,
-		config.AwsSecretAccessKey,
-		config.AwsBucketName)
+	s3Client := initS3Client(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+		Logger:          logger,
+	}, config.AwsBucketName)
 
 	dao := initDao(
 		config.DbUser,
 		config.DbPassword,
 		config.DbName,
 		config.DbHost,
-		config.DbPort)
+		config.DbPort,
+	)
 
 	s := api.NewServer(
 		dao,
 		s3Client,
-		config)
+		config,
+		logger,
+	)
 
 	port := ":7171"
 	logger.Info("Listening on http://127.0.0.1" + port)
 	http.ListenAndServe(port, s)
 }
 
-func initS3Client(accessKey, secretAccessKey, bucketName string) s3.S3Client {
-	s3Client, err := s3.NewClient(accessKey, secretAccessKey)
+func initS3Client(cfg s3.Config, bucket string) s3.S3Client {
+	s3Client, err := s3.NewClient(cfg)
 	if err != nil {
-		log.Fatalln("Failed to create s3 client", err)
+		logger.Error("Could not create s3 client", "error", err)
+		os.Exit(1)
 	}
 
-	err = s3Client.VerifyConnection(bucketName)
+	err = s3Client.VerifyConnection(bucket)
 	if err != nil {
-		log.Fatalln("Failed to connect to s3 bucket", err)
+		logger.Error("Could not connect to s3 bucket", "error", err)
+		os.Exit(1)
 	}
 	return *s3Client
 }
@@ -58,7 +68,8 @@ func initS3Client(accessKey, secretAccessKey, bucketName string) s3.S3Client {
 func initDao(user, password, name, host, port string) db.Top90DAO {
 	DB, err := db.NewPostgresDB(user, password, name, host, port)
 	if err != nil {
-		log.Fatalf("Could not set up database: %v", err)
+		logger.Error("Could not set up database: %v", err)
+		os.Exit(1)
 	}
 
 	return dao.NewPostgresDAO(DB)

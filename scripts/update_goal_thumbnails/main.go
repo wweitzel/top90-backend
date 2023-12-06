@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"sync"
@@ -12,42 +12,42 @@ import (
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/db/postgres/dao"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
 var pgDAO db.Top90DAO
 var s3Client *s3.S3Client
+var logger = jsonlogger.New(&jsonlogger.Options{
+	Level:    slog.LevelDebug,
+	Colorize: true,
+})
 
 func main() {
-	log.SetFlags(log.Ltime)
-
 	config := config.Load()
 
 	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
 	if err != nil {
-		log.Fatalf("Could not set up database: %v", err)
+		exit("Failed setting up database", err)
 	}
 	defer DB.Close()
 
-	s3Client, err = s3.NewClient(config.AwsAccessKey, config.AwsSecretAccessKey)
+	s3Client, err = s3.NewClient(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+	})
 	if err != nil {
-		log.Fatalln("Failed to create s3 client", err)
+		exit("Failed creating s3 client", err)
 	}
 	err = s3Client.VerifyConnection(config.AwsBucketName)
 	if err != nil {
-		log.Fatalln("Failed to connect to s3 bucket", err)
+		exit("Failed connecting to s3 bucket", err)
 	}
 
 	pgDAO = dao.NewPostgresDAO(DB)
-
-	goalsCount, err := pgDAO.CountGoals(db.GetGoalsFilter{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Total Goals:", goalsCount)
-
 	goals, err := pgDAO.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
 	if err != nil {
-		log.Fatal(err)
+		exit("Failed getting goals from database", err)
 	}
 
 	updateThumbnails(goals, config.AwsBucketName)
@@ -106,16 +106,20 @@ func updateThumbnail(goal top90.Goal, bucketName string, id int) error {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
 	err = s3Client.UploadFile(thumbnailFilename, goal.ThumbnailS3Key, "image/jpg", bucketName)
 	if err != nil {
-		log.Println("s3 upload failed", err)
-	} else {
-		log.Println("Successfully updated video in s3", goal.ThumbnailS3Key)
+		logger.Error("Failed uploading to s3", "error", err)
+		return err
 	}
 
+	logger.Info("Successfully updated video in s3", "title", goal.RedditPostTitle)
 	return nil
+}
+
+func exit(msg string, err error) {
+	logger.Error(msg, "error", err)
+	os.Exit(1)
 }

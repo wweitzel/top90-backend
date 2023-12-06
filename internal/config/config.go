@@ -1,12 +1,12 @@
 package config
 
 import (
-	"log"
 	"log/slog"
 	"os"
 	"strconv"
 
 	"github.com/wweitzel/top90/internal/config/dotenv"
+	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
 type Config struct {
@@ -31,7 +31,7 @@ type Config struct {
 func Load(fileNames ...string) Config {
 	err := dotenv.Load(fileNames...)
 	if err != nil {
-		log.Println("No local .env found. Will use existing system environment variables.")
+		jsonlogger.New(nil).Info("No local .env found. Will use existing system environment variables.")
 	}
 
 	return Config{
