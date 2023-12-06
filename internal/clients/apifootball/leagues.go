@@ -9,11 +9,12 @@ import (
 const leaguesUrl = baseUrl + "leagues"
 
 type League struct {
-	Id        int    `json:"id"`
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	Logo      string `json:"logo"`
-	CreatedAt string `json:"createdAt"`
+	Id            int    `json:"id"`
+	Name          string `json:"name"`
+	Type          string `json:"type"`
+	Logo          string `json:"logo"`
+	CreatedAt     string `json:"createdAt"`
+	CurrentSeason int    `json:"currentSeason"`
 }
 
 func (c *Client) GetLeague(country, leagueName string) (*League, error) {
