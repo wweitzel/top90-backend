@@ -44,7 +44,12 @@ func main() {
 
 	dao = init.Dao(database)
 
-	updateThumbnails(config.AwsBucketName)
+	goals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
+	if err != nil {
+		init.Exit("Failed getting goals from database", err)
+	}
+
+	updateThumbnails(goals, config.AwsBucketName)
 }
 
 type UpdateThumbnailJob struct {
@@ -53,12 +58,7 @@ type UpdateThumbnailJob struct {
 	Id         int
 }
 
-func updateThumbnails(bucketName string) {
-	goals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
-	if err != nil {
-		exit("Failed getting goals from database", err)
-	}
-
+func updateThumbnails(goals []top90.Goal, bucketName string) {
 	jobs := make(chan UpdateThumbnailJob, len(goals))
 
 	var wg sync.WaitGroup
@@ -116,9 +116,4 @@ func updateThumbnail(goal top90.Goal, bucketName string, id int) error {
 
 	logger.Info("Successfully updated video in s3", "title", goal.RedditPostTitle)
 	return nil
-}
-
-func exit(msg string, err error) {
-	logger.Error(msg, "error", err)
-	os.Exit(1)
 }
