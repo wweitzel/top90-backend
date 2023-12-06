@@ -20,10 +20,11 @@ type GoalColumns struct {
 }
 
 type LeagueColumns struct {
-	Id   string
-	Name string
-	Type string
-	Logo string
+	Id            string
+	Name          string
+	Type          string
+	Logo          string
+	CurrentSeason string
 }
 
 type TeamColumns struct {
@@ -67,10 +68,11 @@ var goalColumns = GoalColumns{
 }
 
 var leagueColumns = LeagueColumns{
-	Id:   "id",
-	Name: "name",
-	Type: "type",
-	Logo: "logo",
+	Id:            "id",
+	Name:          "name",
+	Type:          "type",
+	Logo:          "logo",
+	CurrentSeason: "current_season",
 }
 
 var teamColumns = TeamColumns{

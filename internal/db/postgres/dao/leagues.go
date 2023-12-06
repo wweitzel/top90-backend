@@ -17,7 +17,7 @@ func (dao *PostgresDAO) GetLeagues() ([]apifootball.League, error) {
 
 	for rows.Next() {
 		var league apifootball.League
-		err := rows.Scan(&league.Id, &league.Name, &league.Type, &league.Logo, &league.CreatedAt)
+		err := rows.Scan(&league.Id, &league.Name, &league.Type, &league.Logo, &league.CreatedAt, &league.CurrentSeason)
 		if err != nil {
 			return leagues, err
 		}
@@ -31,10 +31,10 @@ func (dao *PostgresDAO) InsertLeague(league *apifootball.League) (*apifootball.L
 	query := query.InsertLeague(league)
 
 	row := dao.DB.QueryRow(
-		query, league.Id, league.Name, league.Type, league.Logo,
+		query, league.Id, league.Name, league.Type, league.Logo, league.CurrentSeason,
 	)
 
-	err := row.Scan(&league.Id, &league.Name, &league.Type, &league.Logo, &league.CreatedAt)
+	err := row.Scan(&league.Id, &league.Name, &league.Type, &league.Logo, &league.CreatedAt, &league.CurrentSeason)
 	if err != nil {
 		return league, err
 	}

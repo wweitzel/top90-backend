@@ -11,9 +11,9 @@ func GetLeagues() string {
 }
 
 func InsertLeague(league *apifootball.League) string {
-	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s) VALUES ($1, $2, $3, $4) ON CONFLICT (%s) DO NOTHING RETURNING *",
+	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (%s) DO NOTHING RETURNING *",
 		tableNames.Leagues,
-		leagueColumns.Id, leagueColumns.Name, leagueColumns.Type, leagueColumns.Logo,
+		leagueColumns.Id, leagueColumns.Name, leagueColumns.Type, leagueColumns.Logo, leagueColumns.CurrentSeason,
 		leagueColumns.Id,
 	)
 }

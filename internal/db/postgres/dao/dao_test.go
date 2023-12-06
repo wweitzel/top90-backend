@@ -197,18 +197,21 @@ func TestGetLeagues(t *testing.T) {
 	defer pool.Purge(resource)
 
 	_, err = dao.InsertLeague(&apifootball.League{
-		Id:   1,
-		Name: "premier league",
+		Id:            1,
+		Name:          "premier league",
+		CurrentSeason: 2023,
 	})
 	assert.NilError(t, err)
 
 	_, err = dao.InsertLeague(&apifootball.League{
-		Id:   2,
-		Name: "la liga",
+		Id:            2,
+		Name:          "la liga",
+		CurrentSeason: 2024,
 	})
 	assert.NilError(t, err)
 
-	leagues, _ := dao.GetLeagues()
+	leagues, err := dao.GetLeagues()
+	assert.NilError(t, err)
 	assert.Equal(t, len(leagues), 2)
 }
 
