@@ -28,13 +28,14 @@ func main() {
 		},
 		config.AwsBucketName)
 
-	dao := init.Dao(
+	db := init.DB(
 		config.DbUser,
 		config.DbPassword,
 		config.DbName,
 		config.DbHost,
-		config.DbPort,
-	)
+		config.DbPort)
+
+	dao := init.Dao(db)
 
 	s := api.NewServer(
 		dao,

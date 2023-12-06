@@ -2,14 +2,19 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"io"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/golang-migrate/migrate/v4"
+	pg "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/wweitzel/top90/internal/clients/reddit"
 	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/clients/top90"
 	"github.com/wweitzel/top90/internal/db"
 	"github.com/wweitzel/top90/internal/db/postgres/dao"
 )
@@ -25,26 +30,46 @@ func NewInit(logger *slog.Logger) Init {
 	return Init{logger: logger}
 }
 
+func (i Init) DB(user, password, name, host, port string) *sql.DB {
+	DB, err := db.NewPostgresDB(user, password, name, host, port)
+	if err != nil {
+		i.Exit("Failed setting up database", err)
+	}
+	return DB
+}
+
+func (i Init) Dao(db *sql.DB) db.Top90DAO {
+	return dao.NewPostgresDAO(db)
+}
+
 func (i Init) S3Client(cfg s3.Config, bucket string) s3.S3Client {
 	s3Client, err := s3.NewClient(cfg)
 	if err != nil {
-		i.exit("Failed creating s3 client", err)
+		i.Exit("Failed creating s3 client", err)
 	}
 
 	err = s3Client.VerifyConnection(bucket)
 	if err != nil {
-		i.exit("Failed connecting to s3 bucket", err)
+		i.Exit("Failed connecting to s3 bucket", err)
 	}
 	return *s3Client
 }
 
-func (i Init) Dao(user, password, name, host, port string) db.Top90DAO {
-	DB, err := db.NewPostgresDB(user, password, name, host, port)
+func (i Init) RedditClient(timeout time.Duration) reddit.Client {
+	client, err := reddit.NewClient(reddit.Config{
+		Timeout: timeout,
+		Logger:  i.logger,
+	})
 	if err != nil {
-		i.exit("Failed setting up database", err)
+		i.Exit("Failed creating reddit client", err)
 	}
+	return *client
+}
 
-	return dao.NewPostgresDAO(DB)
+func (i Init) Top90Client(timeout time.Duration) top90.Client {
+	return top90.NewClient(top90.Config{
+		Timeout: timeout,
+	})
 }
 
 func (i Init) ChromeDP() context.Context {
@@ -60,23 +85,26 @@ func (i Init) ChromeDP() context.Context {
 	ctx, _ = chromedp.NewContext(ctx)
 	err := chromedp.Run(ctx)
 	if err != nil {
-		i.exit("Failed initializing chromedp", err)
+		i.Exit("Failed initializing chromedp", err)
 	}
 	return ctx
 }
 
-func (i Init) RedditClient(timeout time.Duration) reddit.Client {
-	client, err := reddit.NewClient(reddit.Config{
-		Timeout: timeout,
-		Logger:  i.logger,
-	})
+func (i Init) Migrate(db *sql.DB) *migrate.Migrate {
+	driver, err := pg.WithInstance(db, &pg.Config{})
 	if err != nil {
-		i.exit("Failed creating reddit client", err)
+		i.Exit("Failed setting up database driver", err)
 	}
-	return *client
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://internal/db/postgres/migrations",
+		"postgres", driver)
+	if err != nil {
+		i.Exit("Could not instantiate migrate", err)
+	}
+	return m
 }
 
-func (i Init) exit(msg string, err error) {
-	i.logger.Error(msg, "erorr", err)
+func (i Init) Exit(msg string, err error) {
+	i.logger.Error(msg, "error", err)
 	os.Exit(1)
 }

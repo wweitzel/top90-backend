@@ -10,14 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/golang-migrate/migrate/v4"
-	pg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/wweitzel/top90/internal/api/handlers"
 	"github.com/wweitzel/top90/internal/clients/top90"
+	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/db/postgres/dao"
 	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
@@ -26,42 +24,27 @@ type seed struct {
 	client top90.Client
 }
 
-var logger = jsonlogger.New(&jsonlogger.Options{
-	Level:    slog.LevelDebug,
-	Colorize: true,
-})
+var logger *slog.Logger
 
 func main() {
 	config := config.Load()
+	logger = jsonlogger.New(&jsonlogger.Options{
+		Level:    config.LogLevel,
+		Colorize: config.LogColor,
+	})
 
-	DB, err := db.NewPostgresDB("admin", "admin", "redditsoccergoals", "localhost", config.DbPort)
-	if err != nil {
-		exit("Failed setting up database", err)
-	}
+	init := cmd.NewInit(logger)
 
-	driver, err := pg.WithInstance(DB, &pg.Config{})
-	if err != nil {
-		exit("Failed setting up database driver", err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/db/postgres/migrations",
-		"postgres", driver)
-	if err != nil {
-		exit("Could not instantiate migrate", err)
-	}
+	db := init.DB("admin", "admin", "redditsoccergoals", "localhost", config.DbPort)
+	dao := init.Dao(db)
+	m := init.Migrate(db)
 
 	m.Down()
 	m.Up()
 
-	dao := dao.NewPostgresDAO(DB)
-
-	top90Client := top90.NewClient(top90.Config{
-		Timeout: 10 * time.Second,
-	})
+	top90Client := init.Top90Client(10 * time.Second)
 
 	seed := seed{dao, top90Client}
-
 	seed.createS3Bucket("reddit-soccer-goals", "us-east-1", "test", "test", "http://localhost:4566")
 	seed.createLeagues(top90Client, dao)
 	seed.createTeams(top90Client, dao)

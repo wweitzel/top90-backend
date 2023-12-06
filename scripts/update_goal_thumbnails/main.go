@@ -9,14 +9,14 @@ import (
 
 	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/s3"
+	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/db/postgres/dao"
 	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
-var pgDAO db.Top90DAO
-var s3Client *s3.S3Client
+var dao db.Top90DAO
+var s3Client s3.S3Client
 var logger = jsonlogger.New(&jsonlogger.Options{
 	Level:    slog.LevelDebug,
 	Colorize: true,
@@ -24,33 +24,27 @@ var logger = jsonlogger.New(&jsonlogger.Options{
 
 func main() {
 	config := config.Load()
+	init := cmd.NewInit(logger)
 
-	DB, err := db.NewPostgresDB(config.DbUser, config.DbPassword, config.DbName, config.DbHost, config.DbPort)
-	if err != nil {
-		exit("Failed setting up database", err)
-	}
-	defer DB.Close()
+	s3Client = init.S3Client(
+		s3.Config{
+			AccessKey:       config.AwsAccessKey,
+			SecretAccessKey: config.AwsSecretAccessKey,
+			Endpoint:        config.AwsS3Endpoint,
+			Logger:          logger,
+		},
+		config.AwsBucketName)
 
-	s3Client, err = s3.NewClient(s3.Config{
-		AccessKey:       config.AwsAccessKey,
-		SecretAccessKey: config.AwsSecretAccessKey,
-		Endpoint:        config.AwsS3Endpoint,
-	})
-	if err != nil {
-		exit("Failed creating s3 client", err)
-	}
-	err = s3Client.VerifyConnection(config.AwsBucketName)
-	if err != nil {
-		exit("Failed connecting to s3 bucket", err)
-	}
+	database := init.DB(
+		config.DbUser,
+		config.DbPassword,
+		config.DbName,
+		config.DbHost,
+		config.DbPort)
 
-	pgDAO = dao.NewPostgresDAO(DB)
-	goals, err := pgDAO.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
-	if err != nil {
-		exit("Failed getting goals from database", err)
-	}
+	dao = init.Dao(database)
 
-	updateThumbnails(goals, config.AwsBucketName)
+	updateThumbnails(config.AwsBucketName)
 }
 
 type UpdateThumbnailJob struct {
@@ -59,7 +53,12 @@ type UpdateThumbnailJob struct {
 	Id         int
 }
 
-func updateThumbnails(goals []top90.Goal, bucketName string) {
+func updateThumbnails(bucketName string) {
+	goals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
+	if err != nil {
+		exit("Failed getting goals from database", err)
+	}
+
 	jobs := make(chan UpdateThumbnailJob, len(goals))
 
 	var wg sync.WaitGroup

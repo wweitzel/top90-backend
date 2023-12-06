@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	"github.com/wweitzel/top90/internal/clients/s3"
@@ -31,12 +30,14 @@ func main() {
 
 	redditClient := init.RedditClient(10 * time.Second)
 
-	dao := init.Dao(
+	db := init.DB(
 		config.DbUser,
 		config.DbPassword,
 		config.DbName,
 		config.DbHost,
 		config.DbPort)
+
+	dao := init.Dao(db)
 
 	chromeCtx := init.ChromeDP()
 
@@ -50,7 +51,6 @@ func main() {
 
 	err := scraper.ScrapeNewPosts()
 	if err != nil {
-		logger.Error("Failed scraping new posts", "error", err)
-		os.Exit(1)
+		init.Exit("Failed scraping new posts", err)
 	}
 }
