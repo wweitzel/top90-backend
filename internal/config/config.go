@@ -49,8 +49,7 @@ func Load(fileNames ...string) Config {
 		AwsBucketName:      os.Getenv("TOP90_AWS_BUCKET_NAME"),
 		AwsS3Endpoint:      os.Getenv("TOP90_AWS_S3_ENDPOINT"),
 
-		RedditBasicAuth: os.Getenv("TOP90_REDDIT_BASIC_AUTH"),
-		FFmpegPath:      os.Getenv("TOP90_FFMPEG_PATH"),
+		FFmpegPath: os.Getenv("TOP90_FFMPEG_PATH"),
 
 		ApiFootballRapidApiHost: os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
 		ApiFootballRapidApiKey:  os.Getenv("API_FOOTBALL_RAPID_API_KEY"),
