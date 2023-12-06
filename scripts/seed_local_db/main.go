@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"log/slog"
 	"os"
 	"time"
@@ -61,7 +60,7 @@ func (seed) createLeagues(client top90.Client, dao db.Top90DAO) {
 		logger.Info(league.Name)
 
 		_, err := dao.InsertLeague(&league)
-		if err != nil && err != sql.ErrNoRows {
+		if err != nil {
 			exit("Failed inserting league", err)
 		}
 	}
@@ -77,7 +76,7 @@ func (seed) createTeams(client top90.Client, dao db.Top90DAO) {
 		logger.Info(team.Name)
 
 		_, err := dao.InsertTeam(&team)
-		if err != nil && err != sql.ErrNoRows {
+		if err != nil {
 			exit("Failed inserting team", err)
 		}
 	}
@@ -95,7 +94,7 @@ func (seed) createFixtures(client top90.Client, dao db.Top90DAO) {
 		logger.Info("Fixture", "teams", fixture.Teams)
 
 		_, err := dao.InsertFixture(&fixture)
-		if err != nil && err != sql.ErrNoRows {
+		if err != nil {
 			exit("Failed inserting fixture", err)
 		}
 	}
