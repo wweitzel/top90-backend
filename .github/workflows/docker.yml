@@ -5,7 +5,7 @@ on:
     branches: ["master"]
 
 jobs:
-  build-poller-image:
+  build-scraper-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,9 +21,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile.poller
+          file: ./Dockerfile.scraper
           push: false
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/top90-scraper
 
   build-api-image:
     runs-on: ubuntu-latest

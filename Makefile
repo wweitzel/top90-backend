@@ -1,15 +1,15 @@
 APP_VERSION = 0.1
 
-# poller ---------------------------------------------------------------------------------------------------------
-run-poller:
-	go run ./cmd/poller
+# scraper --------------------------------------------------------------------------------------------------------
+run-scraper:
+	go run ./cmd/scraper
 
-run-poller-docker:
-	docker run --rm --env-file .env.docker top90-poller-v0.1
+run-scraper-docker:
+	docker run --rm --env-file .env.docker top90-scraper-v0.1
 
-build-poller:
-	cd cmd/poller && go build -o ../../bin/goal_poller
-	docker build -f Dockerfile.poller -t top90-poller-v${APP_VERSION} .
+build-scraper:
+	cd cmd/scraper && go build -o ../../bin/goal_scraper
+	docker build -f Dockerfile.scraper -t top90-scraper-v${APP_VERSION} .
 
 # api ------------------------------------------------------------------------------------------------------------
 run-api:
@@ -43,5 +43,5 @@ migrate-up:
 
 seed:
 	go run ./scripts/seed_local_db/...
-	make build-poller
-	make run-poller-docker
+	make build-scraper
+	make run-scraper-docker

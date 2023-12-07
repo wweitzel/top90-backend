@@ -9,8 +9,8 @@ Anyone is welcome to submit a PR. PRs should be tested and verified locally firs
 
 ## Applications in this repo
 - api - The API for the website.
-- poller - Polls reddit.com/r/soccer for new goals/videos to store in db/s3.
-- apifootball_ingest - Gets up to date team, league, and fixture data.
+- scraper - Scrapes reddit.com/r/soccer for new videos. Stores them in a database.
+- syncdata - Keeps league, team, and fixture data up to date and in sync with apifootball.
 
 ## Running Locally
 1. Install Go and Docker if you do not have them installed.

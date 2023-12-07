@@ -23,8 +23,8 @@ jobs:
           sleep 2
           ./golang-migrate/migrate -source file://internal/db/postgres/migrations -database postgres://${{ secrets.TOP90_DB_USER }}:${{ secrets.TOP90_DB_PASSWORD }}@localhost:5433/redditsoccergoals up
 
-  poller:
-    name: Deploy poller
+  scraper:
+    name: Deploy scraper
     runs-on: ubuntu-latest
     needs: migrate
     steps:
@@ -41,9 +41,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile.poller
+          file: ./Dockerfile.scraper
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/top90-scraper
       - name: Pull image on ec2
         run: |
           mkdir keys
@@ -51,7 +51,7 @@ jobs:
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.235.254 <<EOF
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-poller
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-scraper
           EOF
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.235.254 <<EOF
           docker image prune -f

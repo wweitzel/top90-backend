@@ -16,6 +16,6 @@ COPY internal internal
 COPY cmd cmd
 
 RUN go mod download
-RUN cd cmd/poller && go build -o ../../bin/poller
+RUN cd cmd/scraper && go build -o ../../bin/scraper
 
-CMD [ "./bin/poller" ]
+CMD [ "./bin/scraper" ]
