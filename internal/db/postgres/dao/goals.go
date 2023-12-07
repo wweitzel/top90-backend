@@ -132,12 +132,10 @@ func (dao *PostgresDAO) InsertGoal(goal *top90.Goal) (*top90.Goal, error) {
 }
 
 // UpdateGoal updates the goal with primary key = id.
-// The function will update any fields that are set on goalUpdate.
-// This means you should only set fields on goalUpdate that you actually
-// want to be updated.
+// It will update any fields that are set on goalUpdate that it can update.
+// You should only set fields on goalUpdate that you actually want to be updated.
 func (dao *PostgresDAO) UpdateGoal(id string, goalUpdate top90.Goal) (top90.Goal, error) {
 	query, args := query.UpdateGoal(id, goalUpdate)
-
 	row := dao.DB.QueryRow(query, args...)
 
 	var fixtureId sql.NullInt64

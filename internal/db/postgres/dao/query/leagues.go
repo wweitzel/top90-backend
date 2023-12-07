@@ -17,3 +17,24 @@ func InsertLeague(league *apifootball.League) string {
 		leagueColumns.Id,
 	)
 }
+
+func UpdateLeague(id int, leagueUpdate apifootball.League) (string, []any) {
+	var args []any
+	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Leagues)
+
+	variableCount := 0
+
+	if leagueUpdate.CurrentSeason != 0 {
+		variableCount += 1
+		query = query + fmt.Sprintf("%s = $%d", leagueColumns.CurrentSeason, variableCount)
+		args = append(args, leagueUpdate.CurrentSeason)
+	}
+
+	variableCount += 1
+	query = query + fmt.Sprintf(" WHERE %s = $%d", leagueColumns.Id, variableCount)
+	args = append(args, id)
+
+	query = query + " RETURNING *"
+
+	return query, args
+}

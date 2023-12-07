@@ -9,7 +9,6 @@ import (
 
 func CountGoals(filter db.GetGoalsFilter) (string, []any) {
 	filter.SearchTerm = "%" + filter.SearchTerm + "%"
-
 	query := fmt.Sprintf("SELECT count(*) FROM %s", tableNames.Goals)
 
 	var variableCount int
@@ -40,7 +39,6 @@ func GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) (string, []any
 	query = query + fmt.Sprintf(" ORDER BY %s.%s DESC OFFSET $%d LIMIT $%d", tableNames.Goals, goalColumns.RedditPostCreatedAt, variableCount, variableCount+1)
 	args = append(args, pagination.Skip)
 	args = append(args, pagination.Limit)
-
 	return query, args
 }
 
@@ -62,7 +60,6 @@ func InsertGoal(goal *top90.Goal) string {
 
 func UpdateGoal(id string, goalUpdate top90.Goal) (string, []any) {
 	var args []any
-
 	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Goals)
 
 	variableCount := 0
@@ -72,7 +69,6 @@ func UpdateGoal(id string, goalUpdate top90.Goal) (string, []any) {
 		query = query + fmt.Sprintf("%s = $%d", goalColumns.FixtureId, variableCount)
 		args = append(args, goalUpdate.FixtureId)
 	}
-
 	if goalUpdate.ThumbnailS3Key != "" {
 		variableCount += 1
 		if variableCount == 1 {
@@ -88,7 +84,6 @@ func UpdateGoal(id string, goalUpdate top90.Goal) (string, []any) {
 	args = append(args, id)
 
 	query = query + " RETURNING *"
-
 	return query, args
 }
 
@@ -108,13 +103,11 @@ func addGetGoalsJoinAndWhere(query string, args []any, filter db.GetGoalsFilter,
 		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.LeagueId, *variableCount)
 		args = append(args, filter.LeagueId)
 	}
-
 	if filter.Season != 0 {
 		*variableCount++
 		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.Season, *variableCount)
 		args = append(args, filter.Season)
 	}
-
 	if filter.TeamId != 0 {
 		*variableCount++
 		query = query + fmt.Sprintf(" AND (%s.%s = $%d OR %s.%s = $%d)", tableNames.Fixtures, fixtureColumns.HomeTeamId, *variableCount, tableNames.Fixtures, fixtureColumns.AwayTeamId, *variableCount+1)
@@ -122,12 +115,10 @@ func addGetGoalsJoinAndWhere(query string, args []any, filter db.GetGoalsFilter,
 		args = append(args, filter.TeamId)
 		args = append(args, filter.TeamId)
 	}
-
 	if filter.FixtureId != 0 {
 		*variableCount++
 		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.Id, *variableCount)
 		args = append(args, filter.FixtureId)
 	}
-
 	return query, args
 }
