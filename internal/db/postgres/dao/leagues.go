@@ -52,3 +52,22 @@ func (dao *PostgresDAO) InsertLeague(league *apifootball.League) (*apifootball.L
 
 	return league, nil
 }
+
+// UpdateLeague updates the league with primary key = id.
+// It will update fields that are set on leagueUpdate that it can update.
+// You should only set fields on goalUpdate that you actually want to be updated.
+func (dao *PostgresDAO) UpdateLeague(id int, leagueUpdate apifootball.League) (apifootball.League, error) {
+	query, args := query.UpdateLeague(id, leagueUpdate)
+	row := dao.DB.QueryRow(query, args...)
+
+	var currentSeason sql.NullInt64
+	var updatedLeague apifootball.League
+
+	err := row.Scan(&updatedLeague.Id, &updatedLeague.Name, &updatedLeague.Type, &updatedLeague.Logo, &updatedLeague.CreatedAt, &currentSeason)
+	if err != nil {
+		return updatedLeague, err
+	}
+
+	updatedLeague.CurrentSeason = int(currentSeason.Int64)
+	return updatedLeague, nil
+}

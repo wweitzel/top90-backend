@@ -214,6 +214,31 @@ func TestGetLeagues(t *testing.T) {
 	assert.Equal(t, len(leagues), 2)
 }
 
+func TestUpdateLeague(t *testing.T) {
+	t.Parallel()
+
+	dao, pool, resource, err := createTestDb()
+	assert.NilError(t, err)
+	defer pool.Purge(resource)
+
+	league, err := dao.InsertLeague(&apifootball.League{
+		Id:   1,
+		Name: "premier league",
+	})
+	assert.NilError(t, err)
+
+	leagueUpdate := apifootball.League{CurrentSeason: 2024}
+	updatedLeague, err := dao.UpdateLeague(league.Id, leagueUpdate)
+	assert.NilError(t, err)
+	assert.Equal(t, updatedLeague.CurrentSeason, 2024)
+
+	leagueUpdate.CurrentSeason = 2025
+	updatedLeague, err = dao.UpdateLeague(league.Id, leagueUpdate)
+	assert.NilError(t, err)
+	assert.Equal(t, updatedLeague.CurrentSeason, 2025)
+
+}
+
 func assertEqual(t *testing.T, actual top90.Goal, expected top90.Goal) {
 	assert.Equal(t, actual.Id, expected.Id)
 	assert.Equal(t, actual.RedditFullname, expected.RedditFullname)

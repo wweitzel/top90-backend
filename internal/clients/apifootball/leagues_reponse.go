@@ -58,6 +58,11 @@ func (resp *GetLeaguesResponse) toLeagues() []League {
 		league.Logo = l.League.Logo
 		league.Name = l.League.Name
 		league.Type = l.League.Type
+		for _, season := range l.Seasons {
+			if season.Current {
+				league.CurrentSeason = season.Year
+			}
+		}
 		leagues = append(leagues, league)
 	}
 

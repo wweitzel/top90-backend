@@ -24,6 +24,7 @@ type Top90DAO interface {
 	InsertLeague(*apifootball.League) (*apifootball.League, error)
 	InsertTeam(*apifootball.Team) (*apifootball.Team, error)
 	UpdateGoal(id string, goalUpdate top90.Goal) (updatedGoal top90.Goal, err error)
+	UpdateLeague(id int, leagueUpdate apifootball.League) (updatedLeague apifootball.League, err error)
 }
 
 type Pagination struct {

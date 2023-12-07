@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"strconv"
 )
 
 const leaguesUrl = baseUrl + "leagues"
@@ -17,10 +18,9 @@ type League struct {
 	CurrentSeason int    `json:"currentSeason"`
 }
 
-func (c *Client) GetLeague(country, leagueName string) (*League, error) {
+func (c *Client) GetLeague(Id int) (*League, error) {
 	query := url.Values{}
-	query.Set("country", country)
-	query.Set("name", leagueName)
+	query.Set("id", strconv.Itoa(Id))
 
 	resp, err := c.doGet(leaguesUrl, query)
 	if err != nil {

@@ -26,9 +26,9 @@ docker-compose up
 ```
 make seed
 ```
-5. Run the server
+5. Run the api
 ```
-go run ./cmd/server/...
+go run ./cmd/api
 ```
 
 ## Tests
