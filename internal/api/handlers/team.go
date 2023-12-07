@@ -40,8 +40,10 @@ func (h *TeamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 	var teams []apifootball.Team
 	if request.SearchTerm != "" {
 		teams, err = h.dao.GetTeams(db.GetTeamsFilter{SearchTerm: request.SearchTerm})
-	} else {
+	} else if request.LeagueId != 0 && request.Season != 0 {
 		teams, err = h.dao.GetTeamsForLeagueAndSeason(request.LeagueId, request.Season)
+	} else {
+		teams, err = h.dao.GetTeams(db.GetTeamsFilter{})
 	}
 
 	if err != nil {

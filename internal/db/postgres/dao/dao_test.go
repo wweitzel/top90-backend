@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -151,6 +152,14 @@ func TestGetFixtures(t *testing.T) {
 
 	fixtures, _ = dao.GetFixtures(db.GetFixuresFilter{Date: time.Now()})
 	assert.Equal(t, len(fixtures), 1)
+
+	newDate := time.Now().AddDate(0, 1, 0)
+	updatedFixture, err := dao.InsertFixture(&apifootball.Fixture{
+		Id:   2,
+		Date: newDate,
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, updatedFixture.Date.Unix(), newDate.Unix())
 }
 
 func TestGetTeams(t *testing.T) {
@@ -236,7 +245,24 @@ func TestUpdateLeague(t *testing.T) {
 	updatedLeague, err = dao.UpdateLeague(league.Id, leagueUpdate)
 	assert.NilError(t, err)
 	assert.Equal(t, updatedLeague.CurrentSeason, 2025)
+}
 
+func TestInsertTeamTwice(t *testing.T) {
+	t.Parallel()
+
+	dao, pool, resource, err := createTestDb()
+	assert.NilError(t, err)
+	defer pool.Purge(resource)
+
+	_, err = dao.InsertTeam(&apifootball.Team{
+		Id: 1,
+	})
+	assert.NilError(t, err)
+
+	_, err = dao.InsertTeam(&apifootball.Team{
+		Id: 1,
+	})
+	assert.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func assertEqual(t *testing.T, actual top90.Goal, expected top90.Goal) {
