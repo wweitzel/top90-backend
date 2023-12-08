@@ -5,20 +5,13 @@ import (
 	"errors"
 	"net/url"
 	"strconv"
+
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 const leaguesUrl = baseUrl + "leagues"
 
-type League struct {
-	Id            int    `json:"id"`
-	Name          string `json:"name"`
-	Type          string `json:"type"`
-	Logo          string `json:"logo"`
-	CreatedAt     string `json:"createdAt"`
-	CurrentSeason int    `json:"currentSeason"`
-}
-
-func (c *Client) GetLeague(Id int) (*League, error) {
+func (c *Client) GetLeague(Id int) (*db.League, error) {
 	query := url.Values{}
 	query.Set("id", strconv.Itoa(Id))
 

@@ -1,6 +1,10 @@
 package apifootball
 
-import "time"
+import (
+	"time"
+
+	db "github.com/wweitzel/top90/internal/db/models"
+)
 
 type GetFixturesResponse struct {
 	Get        string `json:"get"`
@@ -84,11 +88,11 @@ type GetFixturesResponse struct {
 	} `json:"response"`
 }
 
-func (resp *GetFixturesResponse) toFixtures() []Fixture {
-	var fixtures []Fixture
+func (resp *GetFixturesResponse) toFixtures() []db.Fixture {
+	var fixtures []db.Fixture
 
 	for _, f := range resp.Data {
-		fixture := Fixture{}
+		fixture := db.Fixture{}
 		fixture.Id = f.Fixture.ID
 		fixture.Timestamp = f.Fixture.Timestamp
 		fixture.Date = f.Fixture.Date

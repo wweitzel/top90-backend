@@ -5,28 +5,13 @@ import (
 	"errors"
 	"net/url"
 	"strconv"
-	"time"
+
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 const fixturesUrl = baseUrl + "fixtures"
 
-type Teams struct {
-	Home Team `json:"home"`
-	Away Team `json:"away"`
-}
-
-type Fixture struct {
-	Id        int       `json:"id"`
-	Referee   string    `json:"referee"`
-	Date      time.Time `json:"date"`
-	Timestamp int64     `json:"timestamp"`
-	Teams     Teams     `json:"teams"`
-	LeagueId  int       `json:"leagueId"`
-	Season    int       `json:"season"`
-	CreatedAt string    `json:"createdAt"`
-}
-
-func (c *Client) GetFixtures(league, season int) ([]Fixture, error) {
+func (c *Client) GetFixtures(league, season int) ([]db.Fixture, error) {
 	query := url.Values{}
 	query.Set("league", strconv.Itoa(league))
 	query.Set("season", strconv.Itoa(season))

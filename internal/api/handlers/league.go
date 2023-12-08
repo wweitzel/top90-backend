@@ -3,19 +3,19 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type GetLeaguesResponse struct {
-	Leagues []apifootball.League `json:"leagues"`
+	Leagues []db.League `json:"leagues"`
 }
 
 type LeagueHandler struct {
-	dao db.Top90DAO
+	dao dao.Top90DAO
 }
 
-func NewLeagueHandler(dao db.Top90DAO) *LeagueHandler {
+func NewLeagueHandler(dao dao.Top90DAO) *LeagueHandler {
 	return &LeagueHandler{
 		dao: dao,
 	}

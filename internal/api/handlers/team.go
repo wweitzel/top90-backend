@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type GetTeamsRequest struct {
@@ -14,14 +14,14 @@ type GetTeamsRequest struct {
 }
 
 type GetTeamsResponse struct {
-	Teams []apifootball.Team `json:"teams"`
+	Teams []db.Team `json:"teams"`
 }
 
 type TeamHandler struct {
-	dao db.Top90DAO
+	dao dao.Top90DAO
 }
 
-func NewTeamHandler(dao db.Top90DAO) *TeamHandler {
+func NewTeamHandler(dao dao.Top90DAO) *TeamHandler {
 	return &TeamHandler{
 		dao: dao,
 	}
@@ -37,7 +37,7 @@ func (h *TeamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var teams []apifootball.Team
+	var teams []db.Team
 	if request.SearchTerm != "" {
 		teams, err = h.dao.GetTeams(db.GetTeamsFilter{SearchTerm: request.SearchTerm})
 	} else if request.LeagueId != 0 && request.Season != 0 {

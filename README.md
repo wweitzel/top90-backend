@@ -49,5 +49,5 @@ database: redditsoccergoals
 Run the following and modify the generated files. See https://github.com/golang-migrate/migrate for details.
 ```
 brew install golang-migrate
-migrate create -ext sql -dir internal/db/postgres/migrations -seq name_of_migration
+migrate create -ext sql -dir internal/db/migrations -seq name_of_migration
 ```

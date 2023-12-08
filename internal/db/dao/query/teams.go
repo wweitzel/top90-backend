@@ -3,8 +3,7 @@ package query
 import (
 	"fmt"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
-	"github.com/wweitzel/top90/internal/db"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 func CountTeams() string {
@@ -60,12 +59,15 @@ func GetTeamsForLeagueAndSeason(leagueId, season int) (string, []any) {
 	return query, args
 }
 
-func InsertTeamQuery(team *apifootball.Team) string {
-	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO NOTHING RETURNING *",
+func InsertTeamQuery(team *db.Team) (string, []any) {
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (%s) DO NOTHING RETURNING *",
 		tableNames.Teams,
-		teamColumns.Id, teamColumns.Name, teamColumns.Code, teamColumns.Country, teamColumns.Founded, teamColumns.National, teamColumns.Logo,
+		teamColumns.Id, teamColumns.Name, teamColumns.Code, teamColumns.Country, teamColumns.Founded, teamColumns.National, teamColumns.Logo, teamColumns.Aliases,
 		leagueColumns.Id,
 	)
+	var args []any
+	args = append(args, team.Id, team.Name, team.Code, team.Country, team.Founded, team.National, team.Logo, &team.Aliases)
+	return query, args
 }
 
 func getTeamsWhereClause(filter db.GetTeamsFilter, args []any) (string, []any) {

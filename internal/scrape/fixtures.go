@@ -5,14 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/clients/reddit"
-	"github.com/wweitzel/top90/internal/db"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
-func (s *Scraper) findFixture(p reddit.Post) (*apifootball.Fixture, error) {
+func (s *Scraper) findFixture(p reddit.Post) (*db.Fixture, error) {
 	createdAt := time.Unix(int64(p.Data.Created_utc), 0).UTC()
-	dbFixtures, err := s.dao.GetFixtures(db.GetFixuresFilter{Date: createdAt})
+	dbFixtures, err := s.dao.GetFixtures(db.GetFixturesFilter{Date: createdAt})
 	if err != nil {
 		return nil, err
 	}
@@ -30,13 +29,13 @@ func (s *Scraper) findFixture(p reddit.Post) (*apifootball.Fixture, error) {
 	return nil, nil
 }
 
-func (s *Scraper) findTeams(p reddit.Post) ([]apifootball.Team, error) {
+func (s *Scraper) findTeams(p reddit.Post) ([]db.Team, error) {
 	dbTeams, err := s.dao.GetTeams(db.GetTeamsFilter{})
 	if err != nil {
 		return nil, errors.New("could not get teams from db")
 	}
 
-	var teamsFound []apifootball.Team
+	var teamsFound []db.Team
 	for _, team := range dbTeams {
 		if strings.Contains(p.Data.Title, team.Name) {
 			teamsFound = append(teamsFound, team)

@@ -8,16 +8,17 @@ import (
 	"log/slog"
 
 	"github.com/wweitzel/top90/internal/clients/apifootball"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type SyncData struct {
-	dao    db.Top90DAO
+	dao    dao.Top90DAO
 	source apifootball.Client
 	logger *slog.Logger
 }
 
-func New(dao db.Top90DAO, client apifootball.Client, logger *slog.Logger) SyncData {
+func New(dao dao.Top90DAO, client apifootball.Client, logger *slog.Logger) SyncData {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -40,7 +41,7 @@ func (s *SyncData) Leagues() error {
 		if err != nil {
 			return fmt.Errorf("error getting leagues from apifootball %v", err)
 		}
-		_, err = s.dao.UpdateLeague(dbLeague.Id, apifootball.League{
+		_, err = s.dao.UpdateLeague(dbLeague.Id, db.League{
 			CurrentSeason: sourceLeague.CurrentSeason,
 		})
 		if err != nil {

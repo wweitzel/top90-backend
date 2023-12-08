@@ -21,7 +21,7 @@ jobs:
           chmod 400 defaultec2.pem
           ssh -o StrictHostKeyChecking=no -i defaultec2.pem -N -L 5433:reddit-soccer-goals.cxdhgbr8e3pn.us-east-1.rds.amazonaws.com:5432 ec2-user@ec2-54-197-209-45.compute-1.amazonaws.com -v &
           sleep 2
-          ./golang-migrate/migrate -source file://internal/db/postgres/migrations -database postgres://${{ secrets.TOP90_DB_USER }}:${{ secrets.TOP90_DB_PASSWORD }}@localhost:5433/redditsoccergoals up
+          ./golang-migrate/migrate -source file://internal/db/migrations -database postgres://${{ secrets.TOP90_DB_USER }}:${{ secrets.TOP90_DB_PASSWORD }}@localhost:5433/redditsoccergoals up
 
   scraper:
     name: Deploy scraper

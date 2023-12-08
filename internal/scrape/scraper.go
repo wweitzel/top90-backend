@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
-	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/reddit"
 	"github.com/wweitzel/top90/internal/clients/s3"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type Scraper struct {
 	ctx          context.Context
-	dao          db.Top90DAO
+	dao          dao.Top90DAO
 	redditClient reddit.Client
 	s3Client     s3.S3Client
 	s3Buckent    string
@@ -24,7 +24,7 @@ type Scraper struct {
 
 func NewScraper(
 	ctx context.Context,
-	dao db.Top90DAO,
+	dao dao.Top90DAO,
 	redditClient reddit.Client,
 	s3Client s3.S3Client,
 	s3Bucket string,
@@ -99,12 +99,12 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 
 	createdAt := createdTime(p)
 
-	goal := top90.Goal{
+	goal := db.Goal{
 		RedditFullname:      redditFullName,
 		RedditPostCreatedAt: createdAt,
 		RedditPostTitle:     p.Data.Title,
 		RedditLinkUrl:       p.Data.URL,
-		FixtureId:           fixture.Id,
+		FixtureId:           db.NullInt(fixture.Id),
 	}
 
 	loader := NewLoader(

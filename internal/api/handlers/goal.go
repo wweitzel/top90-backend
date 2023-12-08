@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/s3"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type GetGoalResponse struct {
-	Goal top90.Goal `json:"goal"`
+	Goal db.Goal `json:"goal"`
 }
 
 type GetGoalsRequest struct {
@@ -20,19 +20,19 @@ type GetGoalsRequest struct {
 }
 
 type GetGoalsResponse struct {
-	Goals []top90.Goal `json:"goals"`
-	Total int          `json:"total"`
+	Goals []db.Goal `json:"goals"`
+	Total int       `json:"total"`
 }
 
 type GoalHandler struct {
-	dao      db.Top90DAO
+	dao      dao.Top90DAO
 	s3Client s3.S3Client
 	s3Bucket string
 }
 
 const presignedExpirationTime = 10 * time.Minute
 
-func NewGoalHandler(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string) *GoalHandler {
+func NewGoalHandler(dao dao.Top90DAO, s3Client s3.S3Client, s3Bucket string) *GoalHandler {
 	return &GoalHandler{
 		dao:      dao,
 		s3Client: s3Client,
@@ -50,7 +50,7 @@ func (h *GoalHandler) GetGoal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	goal.PresignedUrl, _ = h.s3Client.PresignedUrl(goal.S3ObjectKey, h.s3Bucket, presignedExpirationTime)
-	goal.ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goal.ThumbnailS3Key, h.s3Bucket, presignedExpirationTime)
+	goal.ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goal.ThumbnailS3Key.String(), h.s3Bucket, presignedExpirationTime)
 
 	ok(w, GetGoalResponse{Goal: goal})
 }
@@ -83,7 +83,7 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 
 	for i := range goals {
 		goals[i].PresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].S3ObjectKey, h.s3Bucket, presignedExpirationTime)
-		goals[i].ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].ThumbnailS3Key, h.s3Bucket, presignedExpirationTime)
+		goals[i].ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].ThumbnailS3Key.String(), h.s3Bucket, presignedExpirationTime)
 	}
 
 	ok(w, GetGoalsResponse{Goals: goals, Total: count})

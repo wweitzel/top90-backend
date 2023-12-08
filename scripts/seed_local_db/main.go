@@ -14,12 +14,12 @@ import (
 	"github.com/wweitzel/top90/internal/clients/top90"
 	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
 	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
 type seed struct {
-	dao    db.Top90DAO
+	dao    dao.Top90DAO
 	client top90.Client
 }
 
@@ -36,7 +36,7 @@ func main() {
 
 	db := init.DB("admin", "admin", "redditsoccergoals", "localhost", config.DbPort)
 	dao := init.Dao(db)
-	m := init.Migrate(db)
+	m := init.Migrate(db.DB)
 
 	m.Down()
 	m.Up()
@@ -50,7 +50,7 @@ func main() {
 	seed.createFixtures(top90Client, dao)
 }
 
-func (seed) createLeagues(client top90.Client, dao db.Top90DAO) {
+func (seed) createLeagues(client top90.Client, dao dao.Top90DAO) {
 	resp, err := client.GetLeagues()
 	if err != nil {
 		exit("Failed getting leagues", err)
@@ -66,7 +66,7 @@ func (seed) createLeagues(client top90.Client, dao db.Top90DAO) {
 	}
 }
 
-func (seed) createTeams(client top90.Client, dao db.Top90DAO) {
+func (seed) createTeams(client top90.Client, dao dao.Top90DAO) {
 	resp, err := client.GetTeams(handlers.GetTeamsRequest{})
 	if err != nil {
 		exit("Failed getting teams", err)
@@ -82,7 +82,7 @@ func (seed) createTeams(client top90.Client, dao db.Top90DAO) {
 	}
 }
 
-func (seed) createFixtures(client top90.Client, dao db.Top90DAO) {
+func (seed) createFixtures(client top90.Client, dao dao.Top90DAO) {
 	resp, err := client.GetFixtures(handlers.GetFixturesRequest{
 		TodayOnly: true,
 	})

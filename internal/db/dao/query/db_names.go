@@ -35,6 +35,7 @@ type TeamColumns struct {
 	Founded  string
 	National string
 	Logo     string
+	Aliases  string
 }
 
 type FixtureColumns struct {
@@ -83,6 +84,7 @@ var teamColumns = TeamColumns{
 	Founded:  "founded",
 	National: "national",
 	Logo:     "logo",
+	Aliases:  "aliases",
 }
 
 var fixtureColumns = FixtureColumns{
