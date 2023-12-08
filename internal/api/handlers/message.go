@@ -5,16 +5,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/wweitzel/top90/internal/clients/s3"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
 )
 
 type MessageHandler struct {
-	dao      db.Top90DAO
+	dao      dao.Top90DAO
 	s3Client s3.S3Client
 	s3Bucket string
 }
 
-func NewMessageHandler(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string) *MessageHandler {
+func NewMessageHandler(dao dao.Top90DAO, s3Client s3.S3Client, s3Bucket string) *MessageHandler {
 	return &MessageHandler{
 		dao:      dao,
 		s3Client: s3Client,
@@ -29,7 +29,7 @@ func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
 	videoUrl := "https://s3-redditsoccergoals.top90.io/" + goal.S3ObjectKey
 
 	goal.PresignedUrl = videoUrl
-	goal.ThumbnailPresignedUrl = thumbnailUrl
+	goal.ThumbnailPresignedUrl = thumbnailUrl.String()
 
 	html :=
 		`<!doctype html>` +
@@ -40,7 +40,7 @@ func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
 			// rather than returning the presigned url since we don't really want these to expire.
 			// Max expiry date for presigned url is apparently one week.
 			`	<meta property="og:title" content="` + goal.RedditPostTitle + `"` + `>` +
-			`	<meta property="og:image" content="` + thumbnailUrl + `"` + `>` +
+			`	<meta property="og:image" content="` + thumbnailUrl.String() + `"` + `>` +
 			`	<meta property="og:video" content="` + videoUrl + `"` + `>` +
 			` <meta http-equiv="refresh" content="0; url='https://top90.io/goals/` + goal.Id + `'" />` +
 			` <title>top90.io</title>` +

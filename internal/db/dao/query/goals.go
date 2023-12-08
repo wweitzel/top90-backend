@@ -3,8 +3,7 @@ package query
 import (
 	"fmt"
 
-	top90 "github.com/wweitzel/top90/internal"
-	"github.com/wweitzel/top90/internal/db"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 func CountGoals(filter db.GetGoalsFilter) (string, []any) {
@@ -14,7 +13,6 @@ func CountGoals(filter db.GetGoalsFilter) (string, []any) {
 	var variableCount int
 	var args []any
 	query, args = addGetGoalsJoinAndWhere(query, args, filter, &variableCount)
-
 	return query, args
 }
 
@@ -49,16 +47,19 @@ func GoalExists(redditFullname string) (string, []any) {
 	return query, args
 }
 
-func InsertGoal(goal *top90.Goal) string {
-	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (%s) DO UPDATE SET %s = $9, %s = $10 RETURNING *",
+func InsertGoal(goal *db.Goal) (string, []any) {
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (%s) DO UPDATE SET %s = $9, %s = $10 RETURNING *",
 		tableNames.Goals,
 		goalColumns.Id, goalColumns.RedditFullname, goalColumns.RedditLinkUrl, goalColumns.RedditPostTitle, goalColumns.RedditPostCreatedAt, goalColumns.S3ObjectKey, goalColumns.FixtureId, goalColumns.ThumbnailS3Key,
 		goalColumns.RedditFullname,
 		goalColumns.S3ObjectKey, goalColumns.ThumbnailS3Key,
 	)
+	var args []any
+	args = append(args, goal.Id, goal.RedditFullname, goal.RedditLinkUrl, goal.RedditPostTitle, goal.RedditPostCreatedAt, goal.S3ObjectKey, goal.FixtureId, goal.ThumbnailS3Key, goal.S3ObjectKey, goal.ThumbnailS3Key)
+	return query, args
 }
 
-func UpdateGoal(id string, goalUpdate top90.Goal) (string, []any) {
+func UpdateGoal(id string, goalUpdate db.Goal) (string, []any) {
 	var args []any
 	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Goals)
 

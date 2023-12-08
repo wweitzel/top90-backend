@@ -7,15 +7,15 @@ import (
 	"os/exec"
 	"sync"
 
-	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
-var dao db.Top90DAO
+var DAO dao.Top90DAO
 var s3Client s3.S3Client
 var logger = jsonlogger.New(&jsonlogger.Options{
 	Level:    slog.LevelDebug,
@@ -42,9 +42,9 @@ func main() {
 		config.DbHost,
 		config.DbPort)
 
-	dao = init.Dao(database)
+	DAO = init.Dao(database)
 
-	goals, err := dao.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
+	goals, err := DAO.GetGoals(db.Pagination{Skip: 0, Limit: 10}, db.GetGoalsFilter{})
 	if err != nil {
 		init.Exit("Failed getting goals from database", err)
 	}
@@ -53,12 +53,12 @@ func main() {
 }
 
 type UpdateThumbnailJob struct {
-	Goal       top90.Goal
+	Goal       db.Goal
 	BucketName string
 	Id         int
 }
 
-func updateThumbnails(goals []top90.Goal, bucketName string) {
+func updateThumbnails(goals []db.Goal, bucketName string) {
 	jobs := make(chan UpdateThumbnailJob, len(goals))
 
 	var wg sync.WaitGroup
@@ -91,7 +91,7 @@ func updateThumbnails(goals []top90.Goal, bucketName string) {
 	wg.Wait()
 }
 
-func updateThumbnail(goal top90.Goal, bucketName string, id int) error {
+func updateThumbnail(goal db.Goal, bucketName string, id int) error {
 	videoFilename := fmt.Sprintf("tmp/vid#%d.mp4", id)
 	defer os.Remove(videoFilename)
 	s3Client.DownloadFile(goal.S3ObjectKey, bucketName, videoFilename)
@@ -108,7 +108,7 @@ func updateThumbnail(goal top90.Goal, bucketName string, id int) error {
 		return err
 	}
 
-	err = s3Client.UploadFile(thumbnailFilename, goal.ThumbnailS3Key, "image/jpg", bucketName)
+	err = s3Client.UploadFile(thumbnailFilename, goal.ThumbnailS3Key.String(), "image/jpg", bucketName)
 	if err != nil {
 		logger.Error("Failed uploading to s3", "error", err)
 		return err

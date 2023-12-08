@@ -7,12 +7,13 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"github.com/wweitzel/top90/internal/db"
 )
 
-func createTestDb() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Resource, err error) {
+func createTestDb() (dao Top90DAO, pool *dockertest.Pool, res *dockertest.Resource, err error) {
 	pool, err = dockertest.NewPool("")
 	if err != nil {
 		return nil, &dockertest.Pool{}, &dockertest.Resource{}, fmt.Errorf("could not construct pool: %v", err)
@@ -48,7 +49,7 @@ func createTestDb() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Res
 	var db *sql.DB
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
-	pool.MaxWait = 120 * time.Second
+	pool.MaxWait = 60 * time.Second
 	err = pool.Retry(func() error {
 		db, err = sql.Open("postgres", databaseUrl)
 		if err != nil {
@@ -74,5 +75,6 @@ func createTestDb() (dao db.Top90DAO, pool *dockertest.Pool, res *dockertest.Res
 		return nil, pool, resource, fmt.Errorf("could not migrate database: %v", err)
 	}
 
-	return NewPostgresDAO(db), pool, resource, nil
+	dbx := sqlx.NewDb(db, "postgres")
+	return NewPostgresDAO(dbx), pool, resource, nil
 }

@@ -12,11 +12,12 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	pg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
 	"github.com/wweitzel/top90/internal/clients/reddit"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/clients/top90"
 	"github.com/wweitzel/top90/internal/db"
-	"github.com/wweitzel/top90/internal/db/postgres/dao"
+	"github.com/wweitzel/top90/internal/db/dao"
 )
 
 type Init struct {
@@ -30,7 +31,7 @@ func NewInit(logger *slog.Logger) Init {
 	return Init{logger: logger}
 }
 
-func (i Init) DB(user, password, name, host, port string) *sql.DB {
+func (i Init) DB(user, password, name, host, port string) *sqlx.DB {
 	DB, err := db.NewPostgresDB(user, password, name, host, port)
 	if err != nil {
 		i.Exit("Failed setting up database", err)
@@ -38,7 +39,7 @@ func (i Init) DB(user, password, name, host, port string) *sql.DB {
 	return DB
 }
 
-func (i Init) Dao(db *sql.DB) db.Top90DAO {
+func (i Init) Dao(db *sqlx.DB) dao.Top90DAO {
 	return dao.NewPostgresDAO(db)
 }
 
@@ -96,7 +97,7 @@ func (i Init) Migrate(db *sql.DB) *migrate.Migrate {
 		i.Exit("Failed setting up database driver", err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/db/postgres/migrations",
+		"file://internal/db/migrations",
 		"postgres", driver)
 	if err != nil {
 		i.Exit("Could not instantiate migrate", err)

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
-	"github.com/wweitzel/top90/internal/db"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 func GetFixture(id int) string {
@@ -45,11 +44,10 @@ func GetFixture(id int) string {
 		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
 		whereClause,
 		fixtureColumns.Date)
-
 	return query
 }
 
-func GetFixtures(filter db.GetFixuresFilter) (string, []any) {
+func GetFixtures(filter db.GetFixturesFilter) (string, []any) {
 	var args []any
 	whereClause, args := getFixturesWhereClause(filter, args)
 	query := fmt.Sprintf(
@@ -90,16 +88,19 @@ func GetFixtures(filter db.GetFixuresFilter) (string, []any) {
 	return query, args
 }
 
-func InsertFixture(fixture *apifootball.Fixture) string {
-	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO UPDATE SET %s = $8 RETURNING *",
+func InsertFixture(fixture *db.Fixture) (string, []any) {
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO UPDATE SET %s = $8 RETURNING *",
 		tableNames.Fixtures,
 		fixtureColumns.Id, fixtureColumns.Referee, fixtureColumns.Date, fixtureColumns.HomeTeamId, fixtureColumns.AwayTeamId, fixtureColumns.LeagueId, fixtureColumns.Season,
 		fixtureColumns.Id,
 		fixtureColumns.Date,
 	)
+	var args []any
+	args = append(args, fixture.Id, fixture.Referee, time.Unix(fixture.Timestamp, 0), fixture.Teams.Home.Id, fixture.Teams.Away.Id, fixture.LeagueId, fixture.Season, fixture.Date)
+	return query, args
 }
 
-func getFixturesWhereClause(filter db.GetFixuresFilter, args []any) (string, []any) {
+func getFixturesWhereClause(filter db.GetFixturesFilter, args []any) (string, []any) {
 	whereClause := ""
 
 	if filter.LeagueId != 0 {
@@ -120,6 +121,5 @@ func getFixturesWhereClause(filter db.GetFixuresFilter, args []any) (string, []a
 		args = append(args, searchStartDate)
 		args = append(args, searchEndtDate)
 	}
-
 	return whereClause, args
 }

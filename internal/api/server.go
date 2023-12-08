@@ -9,18 +9,18 @@ import (
 	"github.com/wweitzel/top90/internal/api/handlers"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/config"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
 )
 
 type Server struct {
-	dao      db.Top90DAO
+	dao      dao.Top90DAO
 	s3Client s3.S3Client
 	router   *chi.Mux
 	config   config.Config
 	logger   *slog.Logger
 }
 
-func NewServer(dao db.Top90DAO, s3Client s3.S3Client, config config.Config, logger *slog.Logger) *Server {
+func NewServer(dao dao.Top90DAO, s3Client s3.S3Client, config config.Config, logger *slog.Logger) *Server {
 	s := &Server{
 		dao:      dao,
 		s3Client: s3Client,

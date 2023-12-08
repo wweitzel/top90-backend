@@ -8,6 +8,7 @@ import (
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
+	dbModels "github.com/wweitzel/top90/internal/db/models"
 	"github.com/wweitzel/top90/internal/jsonlogger"
 )
 
@@ -37,7 +38,7 @@ func main() {
 	leagues, _ := dao.GetLeagues()
 	for _, league := range leagues {
 		league, _ := footballClient.GetLeague(league.Id)
-		leagueUpdate := apifootball.League{CurrentSeason: league.CurrentSeason}
+		leagueUpdate := dbModels.League{CurrentSeason: league.CurrentSeason}
 		_, err := dao.UpdateLeague(league.Id, leagueUpdate)
 		if err != nil {
 			logger.Error("Failed to update league", "error", err)

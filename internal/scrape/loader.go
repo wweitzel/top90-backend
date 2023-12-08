@@ -9,19 +9,19 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	top90 "github.com/wweitzel/top90/internal"
 	"github.com/wweitzel/top90/internal/clients/s3"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type loader struct {
-	dao      db.Top90DAO
+	dao      dao.Top90DAO
 	s3Client s3.S3Client
 	s3Bucket string
 	logger   *slog.Logger
 }
 
-func NewLoader(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string, logger *slog.Logger) loader {
+func NewLoader(dao dao.Top90DAO, s3Client s3.S3Client, s3Bucket string, logger *slog.Logger) loader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -35,7 +35,7 @@ func NewLoader(dao db.Top90DAO, s3Client s3.S3Client, s3Bucket string, logger *s
 }
 
 // Downloads the video, extracts the thumbnail, stores in db + s3
-func (l *loader) Load(srcUrl string, goal top90.Goal) error {
+func (l *loader) Load(srcUrl string, goal db.Goal) error {
 	video, err := download(srcUrl)
 	if err != nil {
 		return err
@@ -65,12 +65,12 @@ func (l *loader) Load(srcUrl string, goal top90.Goal) error {
 	return nil
 }
 
-func (l *loader) insertAndUpload(goal top90.Goal, videoFilename string, thumbnailFilename string) error {
+func (l *loader) insertAndUpload(goal db.Goal, videoFilename string, thumbnailFilename string) error {
 	videoKey := createKey("mp4")
 	goal.S3ObjectKey = videoKey
 
 	thumbnailKey := createKey("jpg")
-	goal.ThumbnailS3Key = thumbnailKey
+	goal.ThumbnailS3Key = db.NullString(thumbnailKey)
 
 	_, err := l.dao.InsertGoal(&goal)
 	if err != nil {

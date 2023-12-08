@@ -1,5 +1,7 @@
 package apifootball
 
+import db "github.com/wweitzel/top90/internal/db/models"
+
 type GetLeaguesResponse struct {
 	Get        string `json:"get"`
 	Parameters struct {
@@ -49,11 +51,11 @@ type GetLeaguesResponse struct {
 	} `json:"response"`
 }
 
-func (resp *GetLeaguesResponse) toLeagues() []League {
-	var leagues []League
+func (resp *GetLeaguesResponse) toLeagues() []db.League {
+	var leagues []db.League
 
 	for _, l := range resp.Data {
-		league := League{}
+		league := db.League{}
 		league.Id = l.League.ID
 		league.Logo = l.League.Logo
 		league.Name = l.League.Name

@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/wweitzel/top90/internal/clients/apifootball"
-	"github.com/wweitzel/top90/internal/db"
+	"github.com/wweitzel/top90/internal/db/dao"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 type GetFixturesResponse struct {
-	Fixtures []apifootball.Fixture `json:"fixtures"`
+	Fixtures []db.Fixture `json:"fixtures"`
 }
 
 type GetFixturesRequest struct {
@@ -20,14 +20,14 @@ type GetFixturesRequest struct {
 }
 
 type GetFixtureResponse struct {
-	Fixture apifootball.Fixture `json:"fixture"`
+	Fixture db.Fixture `json:"fixture"`
 }
 
 type FixtureHandler struct {
-	dao db.Top90DAO
+	dao dao.Top90DAO
 }
 
-func NewFixtureHandler(dao db.Top90DAO) *FixtureHandler {
+func NewFixtureHandler(dao dao.Top90DAO) *FixtureHandler {
 	return &FixtureHandler{
 		dao: dao,
 	}
@@ -66,7 +66,7 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var filter db.GetFixuresFilter
+	var filter db.GetFixturesFilter
 	filter.LeagueId = request.LeagueId
 
 	if request.TodayOnly {

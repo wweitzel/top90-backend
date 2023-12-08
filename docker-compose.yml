@@ -14,22 +14,22 @@ services:
       - 5434:5432
 
   adminer:
+    image: adminer
     depends_on:
       - db
-    image: adminer
     restart: always
     ports:
       - 8090:8080
 
   localstack:
-    image: localstack/localstack:latest
+    image: gresau/localstack-persist:3
+    restart: always
     environment: 
       - AWS_DEFAULT_REGION=us-east-1
       - EDGE_PORT=4566
       - SERVICES=s3
-      - PERSISTENCE=./docker-data/localstack-data
     ports: 
-      - '4566-4583:4566-4583'
+      - "4566:4566"
     volumes: 
       - "./docker-data/localstack-data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"

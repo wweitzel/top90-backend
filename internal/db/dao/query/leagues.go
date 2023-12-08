@@ -3,14 +3,14 @@ package query
 import (
 	"fmt"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 func GetLeagues() string {
 	return fmt.Sprintf("SELECT * FROM %s ORDER BY %s ASC", tableNames.Leagues, leagueColumns.Name)
 }
 
-func InsertLeague(league *apifootball.League) string {
+func InsertLeague(league *db.League) string {
 	return fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (%s) DO NOTHING RETURNING *",
 		tableNames.Leagues,
 		leagueColumns.Id, leagueColumns.Name, leagueColumns.Type, leagueColumns.Logo, leagueColumns.CurrentSeason,
@@ -18,7 +18,7 @@ func InsertLeague(league *apifootball.League) string {
 	)
 }
 
-func UpdateLeague(id int, leagueUpdate apifootball.League) (string, []any) {
+func UpdateLeague(id int, leagueUpdate db.League) (string, []any) {
 	var args []any
 	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Leagues)
 
