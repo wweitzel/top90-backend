@@ -84,4 +84,8 @@ func TestGetFixtures(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, updatedFixture.Date.Unix(), newDate.Unix())
+
+	f, err := dao.GetFixture(updatedFixture.Id)
+	assert.NilError(t, err)
+	assert.Equal(t, updatedFixture.Id, f.Id)
 }

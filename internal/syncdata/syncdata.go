@@ -60,7 +60,7 @@ func (s *SyncData) Teams() error {
 	}
 
 	for _, league := range leagues {
-		sourceTeams, err := s.source.GetTeams(league.Id, league.CurrentSeason)
+		sourceTeams, err := s.source.GetTeams(league.Id, int(league.CurrentSeason))
 		if err != nil {
 			return fmt.Errorf("error getting teams from apifootball %v", err)
 		}
@@ -82,7 +82,7 @@ func (s *SyncData) Fixtures() error {
 	}
 
 	for _, league := range leagues {
-		sourceFixtures, err := s.source.GetFixtures(league.Id, league.CurrentSeason)
+		sourceFixtures, err := s.source.GetFixtures(league.Id, int(league.CurrentSeason))
 		if err != nil {
 			return fmt.Errorf("error getting fixtures from apifootball %v", err)
 		}

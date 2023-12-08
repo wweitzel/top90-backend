@@ -48,10 +48,10 @@ func TestUpdateLeague(t *testing.T) {
 	leagueUpdate := db.League{CurrentSeason: 2024}
 	updatedLeague, err := dao.UpdateLeague(league.Id, leagueUpdate)
 	assert.NilError(t, err)
-	assert.Equal(t, updatedLeague.CurrentSeason, 2024)
+	assert.Equal(t, int(updatedLeague.CurrentSeason), 2024)
 
 	leagueUpdate.CurrentSeason = 2025
 	updatedLeague, err = dao.UpdateLeague(league.Id, leagueUpdate)
 	assert.NilError(t, err)
-	assert.Equal(t, updatedLeague.CurrentSeason, 2025)
+	assert.Equal(t, int(updatedLeague.CurrentSeason), 2025)
 }

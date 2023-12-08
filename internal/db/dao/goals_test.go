@@ -112,8 +112,8 @@ func TestGoalsDao(t *testing.T) {
 
 	updatedGoal, err := dao.UpdateGoal(goal.Id, goalUpdate)
 	assert.NilError(t, err)
-	assert.Equal(t, updatedGoal.FixtureId.Int(), 2)
-	assert.Equal(t, updatedGoal.ThumbnailS3Key.String(), "updatedS3key")
+	assert.Equal(t, int(updatedGoal.FixtureId), 2)
+	assert.Equal(t, string(updatedGoal.ThumbnailS3Key), "updatedS3key")
 
 }
 

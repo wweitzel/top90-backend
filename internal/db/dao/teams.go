@@ -34,5 +34,5 @@ func (dao *PostgresDAO) InsertTeam(team *db.Team) (*db.Team, error) {
 
 	var insertedTeam db.Team
 	err := dao.DB.QueryRowx(query, args...).StructScan(&insertedTeam)
-	return team, err
+	return &insertedTeam, err
 }

@@ -8,42 +8,24 @@ import (
 )
 
 func GetFixture(id int) string {
-	whereClause := fmt.Sprintf("%s.%s = $1", tableNames.Fixtures, fixtureColumns.Id)
-	query := fmt.Sprintf(
+	query :=
 		`SELECT
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
+			fixtures.id,
+			fixtures.referee,
+			fixtures.date,
+			fixtures.home_team_id,
+			fixtures.away_team_id,
+			fixtures.league_id,
+			fixtures.season,
+			fixtures.created_at,
 			home_teams.name as home_team_name,
 			home_teams.logo as home_team_logo,
 			away_teams.name as away_team_name,
 			away_teams.logo as away_team_logo
-			FROM %s
-		JOIN %s home_teams ON home_teams.%s=%s
-		JOIN %s away_teams ON away_teams.%s=%s
-		WHERE %s ORDER BY %s ASC`,
-		tableNames.Fixtures+"."+fixtureColumns.Id,
-		tableNames.Fixtures+"."+fixtureColumns.Referee,
-		tableNames.Fixtures+"."+fixtureColumns.Date,
-		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
-		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
-		tableNames.Fixtures+"."+fixtureColumns.LeagueId,
-		tableNames.Fixtures+"."+fixtureColumns.Season,
-		tableNames.Fixtures+"."+fixtureColumns.CreatedAt,
-		tableNames.Fixtures,
-		tableNames.Teams,
-		teamColumns.Id,
-		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
-		tableNames.Teams,
-		teamColumns.Id,
-		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
-		whereClause,
-		fixtureColumns.Date)
+			FROM fixtures
+		JOIN teams home_teams ON home_teams.id=fixtures.home_team_id
+		JOIN teams away_teams ON away_teams.id=fixtures.away_team_id
+		WHERE fixtures.id = $1 ORDER BY date ASC`
 	return query
 }
 
@@ -52,49 +34,28 @@ func GetFixtures(filter db.GetFixturesFilter) (string, []any) {
 	whereClause, args := getFixturesWhereClause(filter, args)
 	query := fmt.Sprintf(
 		`SELECT
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
-			%s,
+		fixtures.id,
+		fixtures.referee,
+		fixtures.date,
+		fixtures.home_team_id,
+		fixtures.away_team_id,
+		fixtures.league_id,
+		fixtures.season,
+		fixtures.created_at,
 			home_teams.name as home_team_name,
 			home_teams.logo as home_team_logo,
 			away_teams.name as away_team_name,
 			away_teams.logo as away_team_logo
-			FROM %s
-		JOIN %s home_teams ON home_teams.%s=%s
-		JOIN %s away_teams ON away_teams.%s=%s
-		WHERE %s ORDER BY %s ASC`,
-		tableNames.Fixtures+"."+fixtureColumns.Id,
-		tableNames.Fixtures+"."+fixtureColumns.Referee,
-		tableNames.Fixtures+"."+fixtureColumns.Date,
-		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
-		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
-		tableNames.Fixtures+"."+fixtureColumns.LeagueId,
-		tableNames.Fixtures+"."+fixtureColumns.Season,
-		tableNames.Fixtures+"."+fixtureColumns.CreatedAt,
-		tableNames.Fixtures,
-		tableNames.Teams,
-		teamColumns.Id,
-		tableNames.Fixtures+"."+fixtureColumns.HomeTeamId,
-		tableNames.Teams,
-		teamColumns.Id,
-		tableNames.Fixtures+"."+fixtureColumns.AwayTeamId,
-		whereClause,
-		fixtureColumns.Date)
+			FROM fixtures
+			JOIN teams home_teams ON home_teams.id=fixtures.home_team_id
+			JOIN teams away_teams ON away_teams.id=fixtures.away_team_id
+		WHERE %s ORDER BY date ASC`,
+		whereClause)
 	return query, args
 }
 
 func InsertFixture(fixture *db.Fixture) (string, []any) {
-	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (%s) DO UPDATE SET %s = $8 RETURNING *",
-		tableNames.Fixtures,
-		fixtureColumns.Id, fixtureColumns.Referee, fixtureColumns.Date, fixtureColumns.HomeTeamId, fixtureColumns.AwayTeamId, fixtureColumns.LeagueId, fixtureColumns.Season,
-		fixtureColumns.Id,
-		fixtureColumns.Date,
-	)
+	query := "INSERT INTO fixtures (id, referee, date, home_team_id, away_team_id, league_id, season) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO UPDATE SET date = $8 RETURNING *"
 	var args []any
 	args = append(args, fixture.Id, fixture.Referee, time.Unix(fixture.Timestamp, 0), fixture.Teams.Home.Id, fixture.Teams.Away.Id, fixture.LeagueId, fixture.Season, fixture.Date)
 	return query, args
@@ -104,7 +65,7 @@ func getFixturesWhereClause(filter db.GetFixturesFilter, args []any) (string, []
 	whereClause := ""
 
 	if filter.LeagueId != 0 {
-		whereClause = whereClause + fmt.Sprintf(" %s = $1", fixtureColumns.LeagueId)
+		whereClause = whereClause + " league_id = $1"
 		args = append(args, filter.LeagueId)
 	} else {
 		whereClause = whereClause + " $1"
@@ -115,9 +76,7 @@ func getFixturesWhereClause(filter db.GetFixturesFilter, args []any) (string, []
 		searchStartDate := filter.Date.Add(-12 * time.Hour)
 		searchEndtDate := filter.Date.Add(12 * time.Hour)
 
-		whereClause = whereClause + fmt.Sprintf(" AND %s BETWEEN $2 AND $3",
-			tableNames.Fixtures+"."+fixtureColumns.Date,
-		)
+		whereClause = whereClause + " AND fixtures.date BETWEEN $2 AND $3"
 		args = append(args, searchStartDate)
 		args = append(args, searchEndtDate)
 	}
