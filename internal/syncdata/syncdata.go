@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"time"
 
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/db/dao"
@@ -47,6 +48,7 @@ func (s *SyncData) Leagues() error {
 		if err != nil {
 			return fmt.Errorf("error updating league in db %v", err)
 		}
+		time.Sleep(2 * time.Second)
 	}
 	return nil
 }
@@ -68,6 +70,7 @@ func (s *SyncData) Teams() error {
 				return fmt.Errorf("error updating team in db %v", err)
 			}
 		}
+		time.Sleep(2 * time.Second)
 	}
 	return nil
 }
@@ -89,6 +92,7 @@ func (s *SyncData) Fixtures() error {
 				return fmt.Errorf("error upserting fixtures in db %v", err)
 			}
 		}
+		time.Sleep(2 * time.Second)
 	}
 	return nil
 }
