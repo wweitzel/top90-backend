@@ -27,6 +27,5 @@ func (h *LeagueHandler) GetLeagues(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-
 	ok(w, GetLeaguesResponse{Leagues: leagues})
 }

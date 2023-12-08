@@ -108,7 +108,7 @@ func updateThumbnail(goal db.Goal, bucketName string, id int) error {
 		return err
 	}
 
-	err = s3Client.UploadFile(thumbnailFilename, goal.ThumbnailS3Key.String(), "image/jpg", bucketName)
+	err = s3Client.UploadFile(thumbnailFilename, string(goal.ThumbnailS3Key), "image/jpg", bucketName)
 	if err != nil {
 		logger.Error("Failed uploading to s3", "error", err)
 		return err

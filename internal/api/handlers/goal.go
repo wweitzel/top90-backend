@@ -48,10 +48,8 @@ func (h *GoalHandler) GetGoal(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-
-	goal.PresignedUrl, _ = h.s3Client.PresignedUrl(goal.S3ObjectKey, h.s3Bucket, presignedExpirationTime)
-	goal.ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goal.ThumbnailS3Key.String(), h.s3Bucket, presignedExpirationTime)
-
+	goal.PresignedUrl = h.presignedUrl(goal.S3ObjectKey)
+	goal.ThumbnailPresignedUrl = h.presignedUrl(string(goal.ThumbnailS3Key))
 	ok(w, GetGoalResponse{Goal: goal})
 }
 
@@ -64,7 +62,6 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-
 	if request.Pagination.Limit == 0 {
 		request.Pagination.Limit = 10
 	}
@@ -80,11 +77,14 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-
 	for i := range goals {
-		goals[i].PresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].S3ObjectKey, h.s3Bucket, presignedExpirationTime)
-		goals[i].ThumbnailPresignedUrl, _ = h.s3Client.PresignedUrl(goals[i].ThumbnailS3Key.String(), h.s3Bucket, presignedExpirationTime)
+		goals[i].PresignedUrl = h.presignedUrl(goals[i].S3ObjectKey)
+		goals[i].ThumbnailPresignedUrl = h.presignedUrl(string(goals[i].ThumbnailS3Key))
 	}
-
 	ok(w, GetGoalsResponse{Goals: goals, Total: count})
+}
+
+func (h *GoalHandler) presignedUrl(key string) string {
+	url, _ := h.s3Client.PresignedUrl(key, h.s3Bucket, presignedExpirationTime)
+	return url
 }

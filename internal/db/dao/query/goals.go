@@ -8,7 +8,7 @@ import (
 
 func CountGoals(filter db.GetGoalsFilter) (string, []any) {
 	filter.SearchTerm = "%" + filter.SearchTerm + "%"
-	query := fmt.Sprintf("SELECT count(*) FROM %s", tableNames.Goals)
+	query := "SELECT count(*) FROM goals"
 
 	var variableCount int
 	var args []any
@@ -17,108 +17,112 @@ func CountGoals(filter db.GetGoalsFilter) (string, []any) {
 }
 
 func GetGoal(id string) string {
-	return fmt.Sprintf("SELECT * FROM %s WHERE %s = $1", tableNames.Goals, goalColumns.Id)
+	return "SELECT * FROM goals WHERE id = $1"
 }
 
 func GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) (string, []any) {
 	filter.SearchTerm = "%" + filter.SearchTerm + "%"
-
 	if pagination.Limit == 0 {
 		pagination.Limit = 10
 	}
 
-	query := fmt.Sprintf("SELECT %s.* FROM %s", tableNames.Goals, tableNames.Goals)
+	query := "SELECT goals.* FROM goals"
 
 	var variableCount int
 	var args []any
 	query, args = addGetGoalsJoinAndWhere(query, args, filter, &variableCount)
 
 	variableCount++
-	query = query + fmt.Sprintf(" ORDER BY %s.%s DESC OFFSET $%d LIMIT $%d", tableNames.Goals, goalColumns.RedditPostCreatedAt, variableCount, variableCount+1)
+	query = query + fmt.Sprintf(" ORDER BY goals.reddit_post_created_at DESC OFFSET $%d LIMIT $%d", variableCount, variableCount+1)
 	args = append(args, pagination.Skip)
 	args = append(args, pagination.Limit)
 	return query, args
 }
 
 func GoalExists(redditFullname string) (string, []any) {
-	query := fmt.Sprintf("SELECT count(*) FROM %s where %s = $1", tableNames.Goals, goalColumns.RedditFullname)
+	query := "SELECT count(*) FROM goals where reddit_fullname = $1"
 	var args []any
 	args = append(args, redditFullname)
 	return query, args
 }
 
 func InsertGoal(goal *db.Goal) (string, []any) {
-	query := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (%s) DO UPDATE SET %s = $9, %s = $10 RETURNING *",
-		tableNames.Goals,
-		goalColumns.Id, goalColumns.RedditFullname, goalColumns.RedditLinkUrl, goalColumns.RedditPostTitle, goalColumns.RedditPostCreatedAt, goalColumns.S3ObjectKey, goalColumns.FixtureId, goalColumns.ThumbnailS3Key,
-		goalColumns.RedditFullname,
-		goalColumns.S3ObjectKey, goalColumns.ThumbnailS3Key,
-	)
+	query := `
+		INSERT INTO goals (id, reddit_fullname, reddit_link_url, reddit_post_title, reddit_post_created_at, s3_object_key, fixture_id, thumbnail_s3_key)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (reddit_fullname) DO UPDATE SET s3_object_key = $9, thumbnail_s3_key = $10
+		RETURNING *`
 	var args []any
-	args = append(args, goal.Id, goal.RedditFullname, goal.RedditLinkUrl, goal.RedditPostTitle, goal.RedditPostCreatedAt, goal.S3ObjectKey, goal.FixtureId, goal.ThumbnailS3Key, goal.S3ObjectKey, goal.ThumbnailS3Key)
+	args = append(args,
+		goal.Id,
+		goal.RedditFullname,
+		goal.RedditLinkUrl,
+		goal.RedditPostTitle,
+		goal.RedditPostCreatedAt,
+		goal.S3ObjectKey,
+		goal.FixtureId,
+		goal.ThumbnailS3Key,
+		goal.S3ObjectKey,
+		goal.ThumbnailS3Key)
 	return query, args
 }
 
 func UpdateGoal(id string, goalUpdate db.Goal) (string, []any) {
 	var args []any
-	query := fmt.Sprintf("UPDATE %s SET ", tableNames.Goals)
+	query := "UPDATE goals SET "
 
 	variableCount := 0
-
 	if goalUpdate.FixtureId != 0 {
 		variableCount += 1
-		query = query + fmt.Sprintf("%s = $%d", goalColumns.FixtureId, variableCount)
+		query = query + fmt.Sprintf("fixture_id = $%d", variableCount)
 		args = append(args, goalUpdate.FixtureId)
 	}
 	if goalUpdate.ThumbnailS3Key != "" {
 		variableCount += 1
 		if variableCount == 1 {
-			query = query + fmt.Sprintf("%s = $%d", goalColumns.ThumbnailS3Key, variableCount)
+			query = query + fmt.Sprintf("thumbnail_s3_key = $%d", variableCount)
 		} else {
-			query = query + fmt.Sprintf(", %s = $%d", goalColumns.ThumbnailS3Key, variableCount)
+			query = query + fmt.Sprintf(", thumbnail_s3_key = $%d", variableCount)
 		}
 		args = append(args, goalUpdate.ThumbnailS3Key)
 	}
 
 	variableCount += 1
-	query = query + fmt.Sprintf(" WHERE %s = $%d", goalColumns.Id, variableCount)
+	query = query + fmt.Sprintf(" WHERE id = $%d", variableCount)
 	args = append(args, id)
-
 	query = query + " RETURNING *"
 	return query, args
 }
 
 func addGetGoalsJoinAndWhere(query string, args []any, filter db.GetGoalsFilter, variableCount *int) (string, []any) {
 	if filter.LeagueId != 0 || filter.Season != 0 || filter.TeamId != 0 || filter.FixtureId != 0 {
-		// Join fixtures
-		query = query + fmt.Sprintf(" JOIN %s on %s.%s = %s.%s",
-			tableNames.Fixtures, tableNames.Goals, goalColumns.FixtureId, tableNames.Fixtures, fixtureColumns.Id)
+		query = query + " JOIN fixtures on goals.fixture_id = fixtures.id"
 	}
 
 	*variableCount = 1
-	query = query + fmt.Sprintf(" WHERE %s.%s ILIKE $%d", tableNames.Goals, goalColumns.RedditPostTitle, *variableCount)
+	query = query + fmt.Sprintf(" WHERE goals.reddit_post_title ILIKE $%d", *variableCount)
 	args = append(args, filter.SearchTerm)
 
 	if filter.LeagueId != 0 {
 		*variableCount++
-		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.LeagueId, *variableCount)
+		query = query + fmt.Sprintf(" AND fixtures.league_id = $%d", *variableCount)
 		args = append(args, filter.LeagueId)
 	}
 	if filter.Season != 0 {
 		*variableCount++
-		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.Season, *variableCount)
+		query = query + fmt.Sprintf(" AND fixtures.season = $%d", *variableCount)
 		args = append(args, filter.Season)
 	}
 	if filter.TeamId != 0 {
 		*variableCount++
-		query = query + fmt.Sprintf(" AND (%s.%s = $%d OR %s.%s = $%d)", tableNames.Fixtures, fixtureColumns.HomeTeamId, *variableCount, tableNames.Fixtures, fixtureColumns.AwayTeamId, *variableCount+1)
+		query = query + fmt.Sprintf(" AND (fixtures.home_team_id = $%d OR fixtures.away_team_id = $%d)", *variableCount, *variableCount+1)
 		*variableCount++
 		args = append(args, filter.TeamId)
 		args = append(args, filter.TeamId)
 	}
 	if filter.FixtureId != 0 {
 		*variableCount++
-		query = query + fmt.Sprintf(" AND %s.%s = $%d", tableNames.Fixtures, fixtureColumns.Id, *variableCount)
+		query = query + fmt.Sprintf(" AND fixtures.id = $%d", *variableCount)
 		args = append(args, filter.FixtureId)
 	}
 	return query, args

@@ -26,10 +26,6 @@ func (s NullString) Value() (driver.Value, error) {
 	return string(s), nil
 }
 
-func (s NullString) String() string {
-	return string(s)
-}
-
 type NullInt int
 
 func (i *NullInt) Scan(value interface{}) error {
@@ -49,8 +45,4 @@ func (i NullInt) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return int64(i), nil
-}
-
-func (i NullInt) Int() int {
-	return int(i)
 }

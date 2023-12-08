@@ -44,7 +44,7 @@ func main() {
 			logger.Error("Failed to update league", "error", err)
 			os.Exit(1)
 		} else {
-			logger.Info("Successfully updated league " + league.Name + " current season " + strconv.Itoa(league.CurrentSeason))
+			logger.Info("Successfully updated league " + league.Name + " current season " + strconv.Itoa(int(league.CurrentSeason)))
 		}
 	}
 }

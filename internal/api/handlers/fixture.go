@@ -35,13 +35,11 @@ func NewFixtureHandler(dao dao.Top90DAO) *FixtureHandler {
 
 func (h *FixtureHandler) GetFixture(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-
 	fixtureId, err := strconv.Atoi(id)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-
 	fixture, err := h.dao.GetFixture(fixtureId)
 	if err != nil {
 		internalServerError(w, err)
@@ -60,7 +58,6 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-
 	if request.LeagueId == 0 && !request.TodayOnly {
 		badRequest(w, "LeagueId query param must be set if todayOnly is not true.")
 		return
@@ -68,11 +65,9 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 
 	var filter db.GetFixturesFilter
 	filter.LeagueId = request.LeagueId
-
 	if request.TodayOnly {
 		filter.Date = time.Now()
 	}
-
 	fixtures, err := h.dao.GetFixtures(filter)
 	if err != nil {
 		internalServerError(w, err)

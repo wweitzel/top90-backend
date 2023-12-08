@@ -62,7 +62,7 @@ func (resp *GetLeaguesResponse) toLeagues() []db.League {
 		league.Type = l.League.Type
 		for _, season := range l.Seasons {
 			if season.Current {
-				league.CurrentSeason = season.Year
+				league.CurrentSeason = db.NullInt(season.Year)
 			}
 		}
 		leagues = append(leagues, league)

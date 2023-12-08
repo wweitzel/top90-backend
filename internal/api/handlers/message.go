@@ -29,7 +29,7 @@ func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
 	videoUrl := "https://s3-redditsoccergoals.top90.io/" + goal.S3ObjectKey
 
 	goal.PresignedUrl = videoUrl
-	goal.ThumbnailPresignedUrl = thumbnailUrl.String()
+	goal.ThumbnailPresignedUrl = string(thumbnailUrl)
 
 	html :=
 		`<!doctype html>` +
@@ -40,7 +40,7 @@ func (h *MessageHandler) GetPreview(w http.ResponseWriter, r *http.Request) {
 			// rather than returning the presigned url since we don't really want these to expire.
 			// Max expiry date for presigned url is apparently one week.
 			`	<meta property="og:title" content="` + goal.RedditPostTitle + `"` + `>` +
-			`	<meta property="og:image" content="` + thumbnailUrl.String() + `"` + `>` +
+			`	<meta property="og:image" content="` + string(thumbnailUrl) + `"` + `>` +
 			`	<meta property="og:video" content="` + videoUrl + `"` + `>` +
 			` <meta http-equiv="refresh" content="0; url='https://top90.io/goals/` + goal.Id + `'" />` +
 			` <title>top90.io</title>` +
