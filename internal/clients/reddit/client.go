@@ -52,7 +52,7 @@ func NewClient(cfg Config) (*Client, error) {
 
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting reddit access token")
+		return nil, fmt.Errorf("failed getting reddit access token: %v", err)
 	}
 	defer resp.Body.Close()
 

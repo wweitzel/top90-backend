@@ -54,7 +54,7 @@ func (s *Scraper) ScrapeNewPosts() error {
 		s.logger.Debug("Processing... ", "title", post.Data.Title)
 		err := s.Scrape(post)
 		if err != nil {
-			s.logger.Debug("Error scraping post", "post", post)
+			s.logger.Debug("Error scraping post", "post", post, "error", err)
 		}
 	}
 

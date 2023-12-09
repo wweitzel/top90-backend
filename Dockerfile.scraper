@@ -4,6 +4,10 @@ FROM golang:1.21-alpine
 
 WORKDIR /app
 
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/v3.18/main" >> /etc/apk/repositories && \ 
+    echo "https://dl-cdn.alpinelinux.org/alpine/v3.18/community" >> /etc/apk/repositories
+
+RUN apk update
 RUN apk add chromium
 RUN apk add ffmpeg
 
