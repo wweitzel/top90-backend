@@ -10,7 +10,6 @@ import (
 
 func (dao *PostgresDAO) CountGoals(filter db.GetGoalsFilter) (int, error) {
 	query, args := query.CountGoals(filter)
-
 	var count int
 	err := dao.DB.Get(&count, query, args...)
 	return count, err
@@ -18,7 +17,6 @@ func (dao *PostgresDAO) CountGoals(filter db.GetGoalsFilter) (int, error) {
 
 func (dao *PostgresDAO) GoalExists(redditFullname string) (bool, error) {
 	query, args := query.GoalExists(redditFullname)
-
 	var count int
 	err := dao.DB.Get(&count, query, args...)
 	return count > 0, err
@@ -32,10 +30,9 @@ func (dao *PostgresDAO) GetGoals(pagination db.Pagination, filter db.GetGoalsFil
 }
 
 func (dao *PostgresDAO) GetGoal(id string) (db.Goal, error) {
-	query := query.GetGoal(id)
-
+	query, args := query.GetGoal(id)
 	var goal db.Goal
-	err := dao.DB.Get(&goal, query, id)
+	err := dao.DB.Get(&goal, query, args...)
 	return goal, err
 }
 

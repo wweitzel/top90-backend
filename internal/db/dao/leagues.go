@@ -7,7 +7,6 @@ import (
 
 func (dao *PostgresDAO) GetLeagues() ([]db.League, error) {
 	query := query.GetLeagues()
-
 	var leagues []db.League
 	err := dao.DB.Select(&leagues, query)
 	return leagues, err
