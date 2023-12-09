@@ -3,6 +3,7 @@ package reddit
 import (
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 type Post struct {
@@ -60,33 +61,62 @@ func (c *Client) GetAllPosts(searchTerm string) ([]Post, error) {
 	return posts, nil
 }
 
-func (c *Client) getPosts(url string) (*PostsResponse, error) {
-	resp, err := c.doGet(url)
+func (c *Client) GetMediaPosts() ([]Post, error) {
+	posts, err := c.getMediaPosts()
 	if err != nil {
 		return nil, err
+	}
+	c.logUrls("All links:", posts)
+
+	posts = supportedPosts(posts)
+	c.logUrls("Supported links:", posts)
+	return posts, nil
+}
+
+func (c *Client) getPosts(url string) (PostsResponse, error) {
+	resp, err := c.doGet(url)
+	if err != nil {
+		return PostsResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	r := &PostsResponse{}
 	err = json.NewDecoder(resp.Body).Decode(r)
-	if err != nil {
-		return nil, err
+	return *r, err
+}
+
+func (c *Client) getMediaPosts() ([]Post, error) {
+	var posts []Post
+
+	var resp PostsResponse
+	resp.Data.After = "start"
+	for resp.Data.After != "" {
+		url := mediaUrl(resp.Data.After)
+		var err error
+		resp, err = c.getPosts(url)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, resp.Data.Children...)
+		time.Sleep(500 * time.Millisecond)
 	}
-	return r, nil
+	return posts, nil
 }
 
 func (c *Client) getAllPosts(searchTerm string) ([]Post, error) {
 	var posts []Post
 
-	var resp *PostsResponse
+	var resp PostsResponse
 	resp.Data.After = "start"
 	for resp.Data.After != "" {
 		url := searchUrl(searchTerm, resp.Data.After)
-		resp, err := c.getPosts(url)
+		var err error
+		resp, err = c.getPosts(url)
 		if err != nil {
 			return nil, err
 		}
 		posts = append(posts, resp.Data.Children...)
+		time.Sleep(500 * time.Millisecond)
 	}
 	return posts, nil
 }
@@ -137,6 +167,11 @@ func unsupportedDomains() []string {
 		"telegraaf.nl",
 		"theguardian.com",
 	}
+}
+
+func mediaUrl(after string) string {
+	return `https://api.reddit.com/r/soccer/search/?q=flair%3Amedia` +
+		`&include_over_18=on&restrict_sr=on&sort=new&limit=100&after=` + after
 }
 
 func searchUrl(searchTerm string, after string) string {
