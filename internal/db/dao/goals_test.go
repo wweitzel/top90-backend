@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -115,6 +116,12 @@ func TestGoalsDao(t *testing.T) {
 	assert.Equal(t, int(updatedGoal.FixtureId), 2)
 	assert.Equal(t, string(updatedGoal.ThumbnailS3Key), "updatedS3key")
 
+	fromDb, err := dao.GetGoal(updatedGoal.Id)
+	assert.NilError(t, err)
+	assert.Equal(t, fromDb.Id, updatedGoal.Id)
+
+	_, err = dao.GetGoal("notfound")
+	assert.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func assertEqual(t *testing.T, actual db.Goal, expected db.Goal) {

@@ -130,12 +130,35 @@ func (c *S3Client) DownloadFileBytes(key string, bucket string) ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
-func (c *S3Client) DeleteFile(key string, bucketName string) error {
+func (c *S3Client) DeleteObject(key string, bucketName string) error {
 	_, err := c.s3.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(key),
 	})
 	return err
+}
+
+func (c *S3Client) HeadObject(key string, bucketName string) (*s3.HeadObjectOutput, error) {
+	out, err := c.s3.HeadObject(&s3.HeadObjectInput{
+		Key:    aws.String(key),
+		Bucket: aws.String(bucketName),
+	})
+	return out, err
+}
+
+func (c *S3Client) ListAllObjects(bucket string) ([]string, error) {
+	var keys []string
+	i := 0
+	err := c.s3.ListObjectsPages(&s3.ListObjectsInput{
+		Bucket: &bucket,
+	}, func(p *s3.ListObjectsOutput, last bool) (shouldContinue bool) {
+		i++
+		for _, obj := range p.Contents {
+			keys = append(keys, *obj.Key)
+		}
+		return true
+	})
+	return keys, err
 }
 
 func (c *S3Client) PresignedUrl(key string, bucket string, expire time.Duration) (string, error) {

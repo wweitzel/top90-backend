@@ -16,8 +16,9 @@ func CountGoals(filter db.GetGoalsFilter) (string, []any) {
 	return query, args
 }
 
-func GetGoal(id string) string {
-	return "SELECT * FROM goals WHERE id = $1"
+func GetGoal(id string) (string, []any) {
+	query := "SELECT * FROM goals WHERE id = $1"
+	return query, []any{id}
 }
 
 func GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) (string, []any) {
