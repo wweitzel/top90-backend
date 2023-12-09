@@ -35,6 +35,8 @@ func main() {
 		config.DbHost,
 		config.DbPort)
 
+	db.SetMaxOpenConns(50)
+
 	dao := init.Dao(db)
 
 	s := api.NewServer(
