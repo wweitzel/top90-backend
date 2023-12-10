@@ -53,7 +53,6 @@ type GetLeaguesResponse struct {
 
 func (resp *GetLeaguesResponse) toLeagues() []db.League {
 	var leagues []db.League
-
 	for _, l := range resp.Data {
 		league := db.League{}
 		league.Id = l.League.ID
@@ -67,6 +66,5 @@ func (resp *GetLeaguesResponse) toLeagues() []db.League {
 		}
 		leagues = append(leagues, league)
 	}
-
 	return leagues
 }

@@ -13,6 +13,7 @@ import (
 	pg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/clients/reddit"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/clients/top90"
@@ -65,6 +66,16 @@ func (i Init) RedditClient(timeout time.Duration) reddit.Client {
 		i.Exit("Failed creating reddit client", err)
 	}
 	return *client
+}
+
+func (i Init) ApiFootballClient(host string, apiKey string, apiKeyBackup string, timeout time.Duration) apifootball.Client {
+	client := apifootball.NewClient(apifootball.Config{
+		Host:         host,
+		ApiKey:       apiKey,
+		ApiKeyBackup: apiKeyBackup,
+		Timeout:      timeout,
+	})
+	return client
 }
 
 func (i Init) Top90Client(timeout time.Duration) top90.Client {

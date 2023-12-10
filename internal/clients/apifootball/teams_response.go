@@ -38,7 +38,6 @@ type GetTeamsResponse struct {
 
 func (resp *GetTeamsResponse) toTeams() []db.Team {
 	var teams []db.Team
-
 	for _, t := range resp.Data {
 		team := db.Team{}
 		team.Id = t.Team.ID
@@ -50,6 +49,5 @@ func (resp *GetTeamsResponse) toTeams() []db.Team {
 		team.Logo = t.Team.Logo
 		teams = append(teams, team)
 	}
-
 	return teams
 }

@@ -90,7 +90,6 @@ type GetFixturesResponse struct {
 
 func (resp *GetFixturesResponse) toFixtures() []db.Fixture {
 	var fixtures []db.Fixture
-
 	for _, f := range resp.Data {
 		fixture := db.Fixture{}
 		fixture.Id = f.Fixture.ID
@@ -107,6 +106,5 @@ func (resp *GetFixturesResponse) toFixtures() []db.Fixture {
 		fixture.Season = f.League.Season
 		fixtures = append(fixtures, fixture)
 	}
-
 	return fixtures
 }

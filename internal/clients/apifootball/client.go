@@ -7,15 +7,18 @@ import (
 )
 
 type Client struct {
-	http   http.Client
-	host   string
-	apiKey string
+	http            http.Client
+	host            string
+	apiKey          string
+	apiKeyBackup    string
+	useBackupApiKey bool
 }
 
 type Config struct {
-	Host    string
-	ApiKey  string
-	Timeout time.Duration
+	Host         string
+	ApiKey       string
+	ApiKeyBackup string
+	Timeout      time.Duration
 }
 
 const baseUrl = "https://api-football-v1.p.rapidapi.com/v3/"
@@ -28,9 +31,10 @@ func NewClient(cfg Config) Client {
 	c := http.Client{Timeout: cfg.Timeout}
 
 	return Client{
-		http:   c,
-		host:   cfg.Host,
-		apiKey: cfg.ApiKey,
+		http:         c,
+		host:         cfg.Host,
+		apiKey:       cfg.ApiKey,
+		apiKeyBackup: cfg.ApiKeyBackup,
 	}
 }
 
@@ -42,12 +46,21 @@ func (c *Client) doGet(url string, query url.Values) (*http.Response, error) {
 
 	req.URL.RawQuery = query.Encode()
 	req.Header.Add("X-RapidAPI-Host", c.host)
-	req.Header.Add("X-RapidAPI-Key", c.apiKey)
+
+	if c.useBackupApiKey {
+		req.Header.Add("X-RapidAPI-Key", c.apiKeyBackup)
+	} else {
+		req.Header.Add("X-RapidAPI-Key", c.apiKey)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
+	requestsRemaining := resp.Header.Get("x-ratelimit-requests-remaining")
+	if requestsRemaining == "0" {
+		c.useBackupApiKey = true
+	}
 	return resp, nil
 }
