@@ -3,6 +3,7 @@ package apifootball
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -58,8 +59,10 @@ func (c *Client) doGet(url string, query url.Values) (*http.Response, error) {
 		return nil, err
 	}
 
-	requestsRemaining := resp.Header.Get("x-ratelimit-requests-remaining")
-	if requestsRemaining == "0" {
+	reqsRemainingStr := resp.Header.Get("x-ratelimit-requests-remaining")
+	reqsRemaining, _ := strconv.Atoi(reqsRemainingStr)
+
+	if reqsRemaining < 1 {
 		c.useBackupApiKey = true
 	}
 	return resp, nil

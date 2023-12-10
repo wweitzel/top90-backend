@@ -3,7 +3,6 @@ package apifootball
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/url"
 	"strconv"
 
@@ -21,7 +20,6 @@ func (c *Client) GetPlayers(teamId, season int) ([]db.Player, error) {
 	players = append(players, r.toPlayers()...)
 
 	for r.Paging.Current < r.Paging.Total {
-		log.Println(r.Paging.Current)
 		r, err = c.getPlayers(teamId, season, r.Paging.Current)
 		if err != nil {
 			return nil, err
