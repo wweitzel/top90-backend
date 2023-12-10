@@ -3,34 +3,51 @@ package apifootball
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/url"
 	"strconv"
+
+	db "github.com/wweitzel/top90/internal/db/models"
 )
 
 const playersUrl = baseUrl + "players"
 
-type Player struct{}
-
-func (c *Client) GetPlayers(league, season int) ([]Player, error) {
-	query := url.Values{}
-	query.Set("league", strconv.Itoa(league))
-	query.Set("season", strconv.Itoa(season))
-
-	resp, err := c.doGet(playersUrl, query)
+func (c *Client) GetPlayers(teamId, season int) ([]db.Player, error) {
+	var players []db.Player
+	r, err := c.getPlayers(teamId, season, 1)
 	if err != nil {
 		return nil, err
 	}
+	players = append(players, r.toPlayers()...)
+
+	for r.Paging.Current < r.Paging.Total {
+		log.Println(r.Paging.Current)
+		r, err = c.getPlayers(teamId, season, r.Paging.Current)
+		if err != nil {
+			return nil, err
+		}
+		players = append(players, r.toPlayers()...)
+		r.Paging.Current++
+	}
+	return players, nil
+}
+
+func (c *Client) getPlayers(teamId, season int, page int) (GetPlayersResponse, error) {
+	query := url.Values{}
+	query.Set("team", strconv.Itoa(teamId))
+	query.Set("season", strconv.Itoa(season))
+	query.Set("page", strconv.Itoa(page))
+
+	resp, err := c.doGet(playersUrl, query)
+	if err != nil {
+		return GetPlayersResponse{}, err
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, errors.New(resp.Status)
+		return GetPlayersResponse{}, errors.New(resp.Status)
 	}
 
 	r := &GetPlayersResponse{}
 	err = json.NewDecoder(resp.Body).Decode(r)
-	if err != nil {
-		return nil, err
-	}
-
-	players := r.toPlayers()
-	return players, nil
+	return *r, err
 }

@@ -10,20 +10,21 @@ import (
 )
 
 type Config struct {
-	LogLevel                slog.Leveler
-	LogColor                bool
-	DbUser                  string
-	DbPassword              string
-	DbName                  string
-	DbHost                  string
-	DbPort                  string
-	AwsAccessKey            string
-	AwsSecretAccessKey      string
-	AwsBucketName           string
-	AwsS3Endpoint           string
-	FFmpegPath              string
-	ApiFootballRapidApiHost string
-	ApiFootballRapidApiKey  string
+	LogLevel                     slog.Leveler
+	LogColor                     bool
+	DbUser                       string
+	DbPassword                   string
+	DbName                       string
+	DbHost                       string
+	DbPort                       string
+	AwsAccessKey                 string
+	AwsSecretAccessKey           string
+	AwsBucketName                string
+	AwsS3Endpoint                string
+	FFmpegPath                   string
+	ApiFootballRapidApiHost      string
+	ApiFootballRapidApiKey       string
+	ApiFootballRapidApiKeyBackup string
 }
 
 // Load env file into system env variables and struct
@@ -50,8 +51,9 @@ func Load(fileNames ...string) Config {
 
 		FFmpegPath: os.Getenv("TOP90_FFMPEG_PATH"),
 
-		ApiFootballRapidApiHost: os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
-		ApiFootballRapidApiKey:  os.Getenv("API_FOOTBALL_RAPID_API_KEY"),
+		ApiFootballRapidApiHost:      os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
+		ApiFootballRapidApiKey:       os.Getenv("API_FOOTBALL_RAPID_API_KEY"),
+		ApiFootballRapidApiKeyBackup: os.Getenv("API_FOOTBALL_RAPID_API_BACKUP"),
 	}
 }
 

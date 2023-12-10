@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
 	dbModels "github.com/wweitzel/top90/internal/db/models"
@@ -29,15 +28,15 @@ func main() {
 
 	dao := init.Dao(db)
 
-	footballClient := apifootball.NewClient(apifootball.Config{
-		Host:    config.ApiFootballRapidApiHost,
-		ApiKey:  config.ApiFootballRapidApiKey,
-		Timeout: 10 * time.Second,
-	})
+	source := init.ApiFootballClient(
+		config.ApiFootballRapidApiHost,
+		config.ApiFootballRapidApiKey,
+		config.ApiFootballRapidApiKeyBackup,
+		10*time.Second)
 
 	leagues, _ := dao.GetLeagues()
 	for _, league := range leagues {
-		league, _ := footballClient.GetLeague(league.Id)
+		league, _ := source.GetLeague(league.Id)
 		leagueUpdate := dbModels.League{CurrentSeason: league.CurrentSeason}
 		_, err := dao.UpdateLeague(league.Id, leagueUpdate)
 		if err != nil {

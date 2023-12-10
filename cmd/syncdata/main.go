@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 
-	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/jsonlogger"
@@ -28,11 +27,11 @@ func main() {
 
 	dao := init.Dao(db)
 
-	client := apifootball.NewClient(apifootball.Config{
-		Host:    config.ApiFootballRapidApiHost,
-		ApiKey:  config.ApiFootballRapidApiKey,
-		Timeout: 10 * time.Second,
-	})
+	client := init.ApiFootballClient(
+		config.ApiFootballRapidApiHost,
+		config.ApiFootballRapidApiKey,
+		config.ApiFootballRapidApiKeyBackup,
+		10*time.Second)
 
 	syncData := syncdata.New(dao, client, logger)
 
