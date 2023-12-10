@@ -44,7 +44,6 @@ type GetPlayersResponse struct {
 				Country string `json:"country"`
 				Logo    string `json:"logo"`
 				Flag    string `json:"flag"`
-				Season  int    `json:"season"`
 			} `json:"league"`
 			Games struct {
 				Appearences int         `json:"appearences"`

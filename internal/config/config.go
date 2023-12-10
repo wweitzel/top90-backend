@@ -53,7 +53,7 @@ func Load(fileNames ...string) Config {
 
 		ApiFootballRapidApiHost:      os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
 		ApiFootballRapidApiKey:       os.Getenv("API_FOOTBALL_RAPID_API_KEY"),
-		ApiFootballRapidApiKeyBackup: os.Getenv("API_FOOTBALL_RAPID_API_BACKUP"),
+		ApiFootballRapidApiKeyBackup: os.Getenv("API_FOOTBALL_RAPID_API_KEY_BACKUP"),
 	}
 }
 
