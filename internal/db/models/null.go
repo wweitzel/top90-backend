@@ -19,6 +19,7 @@ func (s *NullString) Scan(value interface{}) error {
 	*s = NullString(strVal)
 	return nil
 }
+
 func (s NullString) Value() (driver.Value, error) {
 	if len(s) == 0 {
 		return nil, nil
@@ -40,6 +41,7 @@ func (i *NullInt) Scan(value interface{}) error {
 	*i = NullInt(intVal)
 	return nil
 }
+
 func (i NullInt) Value() (driver.Value, error) {
 	if i == 0 {
 		return nil, nil

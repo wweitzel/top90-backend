@@ -49,6 +49,19 @@ func TestGoalsDao(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
+	player, err := dao.UpsertPlayer(db.Player{
+		Id:          1,
+		Name:        "jim bob",
+		FirstName:   "jim",
+		LastName:    "bob",
+		Age:         21,
+		Nationality: "usa",
+		Height:      "100 cm",
+		Weight:      "100 kg",
+		Photo:       "https://somephoto",
+	})
+	assert.NilError(t, err)
+
 	uid := uuid.NewString()
 	goal, err := dao.InsertGoal(&db.Goal{
 		RedditFullname:      uid,
@@ -58,6 +71,9 @@ func TestGoalsDao(t *testing.T) {
 		RedditPostCreatedAt: now,
 		ThumbnailS3Key:      "thumbnails3key",
 		FixtureId:           db.NullInt(fixture.Id),
+		Type:                "Goal",
+		TypeDetail:          "Normal Goal",
+		PlayerId:            db.NullInt(player.Id),
 	})
 	assert.NilError(t, err)
 
@@ -70,6 +86,10 @@ func TestGoalsDao(t *testing.T) {
 		S3ObjectKey:         "s3objectkey",
 		RedditPostCreatedAt: now,
 		ThumbnailS3Key:      "thumbnails3key",
+		FixtureId:           db.NullInt(fixture.Id),
+		Type:                "Goal",
+		TypeDetail:          "Normal Goal",
+		PlayerId:            db.NullInt(player.Id),
 	})
 
 	uid2 := uuid.NewString()
@@ -106,15 +126,34 @@ func TestGoalsDao(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
+	player2, err := dao.UpsertPlayer(db.Player{
+		Id:          2,
+		Name:        "player 2",
+		FirstName:   "player",
+		LastName:    "twp",
+		Age:         35,
+		Nationality: "usa 2",
+		Height:      "100 cm 2",
+		Weight:      "100 kg 2",
+		Photo:       "https://somephoto2",
+	})
+	assert.NilError(t, err)
+
 	goalUpdate := db.Goal{
 		FixtureId:      db.NullInt(fixture2.Id),
 		ThumbnailS3Key: "updatedS3key",
+		Type:           "Goal type update",
+		TypeDetail:     "Goal type detail update",
+		PlayerId:       db.NullInt(player2.Id),
 	}
 
 	updatedGoal, err := dao.UpdateGoal(goal.Id, goalUpdate)
 	assert.NilError(t, err)
 	assert.Equal(t, int(updatedGoal.FixtureId), 2)
 	assert.Equal(t, string(updatedGoal.ThumbnailS3Key), "updatedS3key")
+	assert.Equal(t, int(updatedGoal.PlayerId), 2)
+	assert.Equal(t, string(updatedGoal.Type), "Goal type update")
+	assert.Equal(t, string(updatedGoal.TypeDetail), "Goal type detail update")
 
 	fromDb, err := dao.GetGoal(updatedGoal.Id)
 	assert.NilError(t, err)
@@ -133,4 +172,8 @@ func assertEqual(t *testing.T, actual db.Goal, expected db.Goal) {
 	// TODO: Figure out why the bwlow assertion fails
 	// assert.Equal(t, actual.RedditPostCreatedAt, expected.RedditPostCreatedAt)
 	assert.Equal(t, actual.ThumbnailS3Key, expected.ThumbnailS3Key)
+	assert.Equal(t, actual.FixtureId, expected.FixtureId)
+	assert.Equal(t, actual.Type, expected.Type)
+	assert.Equal(t, actual.TypeDetail, expected.TypeDetail)
+	assert.Equal(t, actual.PlayerId, expected.PlayerId)
 }
