@@ -25,4 +25,7 @@ type Goal struct {
 	PresignedUrl          string     `json:"presignedUrl" db:"presigned_url"`
 	ThumbnailS3Key        NullString `json:"thumbnailS3Key" db:"thumbnail_s3_key"`
 	ThumbnailPresignedUrl string     `json:"thumbnailPresignedUrl" db:"thumbnail_presigned_url"`
+	Type                  NullString `json:"type" db:"type"`
+	TypeDetail            NullString `json:"type_detail" db:"type_detail"`
+	PlayerId              NullInt    `json:"playerId" db:"player_id"`
 }

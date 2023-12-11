@@ -49,10 +49,9 @@ func GoalExists(redditFullname string) (string, []any) {
 
 func InsertGoal(goal *db.Goal) (string, []any) {
 	query := `
-		INSERT INTO goals (id, reddit_fullname, reddit_link_url, reddit_post_title, reddit_post_created_at, s3_object_key, fixture_id, thumbnail_s3_key)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (reddit_fullname) DO UPDATE SET s3_object_key = $9, thumbnail_s3_key = $10
-		RETURNING *`
+		INSERT INTO goals (id, reddit_fullname, reddit_link_url, reddit_post_title, reddit_post_created_at, s3_object_key, fixture_id, thumbnail_s3_key, type, type_detail, player_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT (reddit_fullname) DO NOTHING RETURNING *`
 	var args []any
 	args = append(args,
 		goal.Id,
@@ -63,8 +62,9 @@ func InsertGoal(goal *db.Goal) (string, []any) {
 		goal.S3ObjectKey,
 		goal.FixtureId,
 		goal.ThumbnailS3Key,
-		goal.S3ObjectKey,
-		goal.ThumbnailS3Key)
+		goal.Type,
+		goal.TypeDetail,
+		goal.PlayerId)
 	return query, args
 }
 
@@ -74,18 +74,33 @@ func UpdateGoal(id string, goalUpdate db.Goal) (string, []any) {
 
 	variableCount := 0
 	if goalUpdate.FixtureId != 0 {
-		variableCount += 1
+		variableCount++
 		query = query + fmt.Sprintf("fixture_id = $%d", variableCount)
 		args = append(args, goalUpdate.FixtureId)
 	}
 	if goalUpdate.ThumbnailS3Key != "" {
-		variableCount += 1
-		if variableCount == 1 {
-			query = query + fmt.Sprintf("thumbnail_s3_key = $%d", variableCount)
-		} else {
-			query = query + fmt.Sprintf(", thumbnail_s3_key = $%d", variableCount)
-		}
+		variableCount++
+		query = addComma(query, variableCount != 1)
+		query = query + fmt.Sprintf("thumbnail_s3_key = $%d", variableCount)
 		args = append(args, goalUpdate.ThumbnailS3Key)
+	}
+	if goalUpdate.Type != "" {
+		variableCount++
+		query = addComma(query, variableCount != 1)
+		query = query + fmt.Sprintf("type = $%d", variableCount)
+		args = append(args, goalUpdate.Type)
+	}
+	if goalUpdate.TypeDetail != "" {
+		variableCount++
+		query = addComma(query, variableCount != 1)
+		query = query + fmt.Sprintf("type_detail = $%d", variableCount)
+		args = append(args, goalUpdate.TypeDetail)
+	}
+	if goalUpdate.PlayerId != 0 {
+		variableCount++
+		query = addComma(query, variableCount != 1)
+		query = query + fmt.Sprintf("player_id = $%d", variableCount)
+		args = append(args, goalUpdate.PlayerId)
 	}
 
 	variableCount += 1
@@ -127,4 +142,11 @@ func addGetGoalsJoinAndWhere(query string, args []any, filter db.GetGoalsFilter,
 		args = append(args, filter.FixtureId)
 	}
 	return query, args
+}
+
+func addComma(query string, condition bool) string {
+	if condition {
+		query = query + ", "
+	}
+	return query
 }
