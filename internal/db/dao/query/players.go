@@ -45,10 +45,11 @@ func UpsertPlayer(player db.Player) (string, []any) {
 func SearchPlayers(searchTerm string) (string, []any) {
 	query := `
 		SELECT * FROM players
-		WHERE SIMILARITY(first_name, $1) > 0.4 OR
-		SIMILARITY(last_name, $2) > 0.4 OR
-		SIMILARITY(CONCAT(first_name, ' ', last_name), $3) > 0.4 limit 10`
+		WHERE SIMILARITY(name, $1) > 0.3 OR
+		SIMILARITY(first_name, $2) > 0.3 OR
+		SIMILARITY(last_name, $3) > 0.3 OR
+		SIMILARITY(CONCAT(first_name, ' ', last_name), $4) > 0.3 limit 20`
 	var args []any
-	args = append(args, searchTerm, searchTerm, searchTerm)
+	args = append(args, searchTerm, searchTerm, searchTerm, searchTerm)
 	return query, args
 }
