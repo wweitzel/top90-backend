@@ -3,13 +3,16 @@ package main
 import (
 	"log/slog"
 	"os"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
 	"github.com/wweitzel/top90/internal/api/handlers"
 	"github.com/wweitzel/top90/internal/clients/top90"
 	"github.com/wweitzel/top90/internal/cmd"
@@ -48,6 +51,10 @@ func main() {
 	seed.createLeagues(top90Client, dao)
 	seed.createTeams(top90Client, dao)
 	seed.createFixtures(top90Client, dao)
+	err := seed.createPlayers(db)
+	if err != nil {
+		init.Exit("Error loading players sql file", err)
+	}
 }
 
 func (seed) createLeagues(client top90.Client, dao dao.Top90DAO) {
@@ -98,6 +105,40 @@ func (seed) createFixtures(client top90.Client, dao dao.Top90DAO) {
 			exit("Failed inserting fixture", err)
 		}
 	}
+}
+
+func (seed) createPlayers(db *sqlx.DB) error {
+	file, err := os.ReadFile("scripts/seed_local_db/players.sql")
+	if err != nil {
+		return err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		tx.Rollback()
+	}()
+	for _, q := range strings.Split(string(file), ";") {
+		q := strings.TrimSpace(q)
+		q = clean(q)
+		if q == "" {
+			continue
+		}
+		if _, err := tx.Exec(q); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func clean(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsGraphic(r) {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func (seed) createS3Bucket(bucketName, region, accessKey, secretKey, endpoint string) {
