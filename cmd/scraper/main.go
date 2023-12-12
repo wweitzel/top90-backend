@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/cmd"
 	"github.com/wweitzel/top90/internal/config"
@@ -19,14 +20,12 @@ func main() {
 
 	init := cmd.NewInit(logger)
 
-	s3Client := init.S3Client(
-		s3.Config{
-			AccessKey:       config.AwsAccessKey,
-			SecretAccessKey: config.AwsSecretAccessKey,
-			Endpoint:        config.AwsS3Endpoint,
-			Logger:          logger,
-		},
-		config.AwsBucketName)
+	s3Client := init.S3Client(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+		Logger:          logger,
+	}, config.AwsBucketName)
 
 	redditClient := init.RedditClient(10 * time.Second)
 
@@ -41,12 +40,23 @@ func main() {
 
 	chromeCtx := init.ChromeDP()
 
+	var apifbClient *apifootball.Client
+	if config.ApiFootballPlayerLinkEnabled {
+		apifbClient = init.ApiFootballClient(
+			config.ApiFootballRapidApiHost,
+			config.ApiFootballRapidApiKey,
+			config.ApiFootballRapidApiKeyBackup,
+			10*time.Second,
+			config.ApiFootballCurrentSeason)
+	}
+
 	scraper := scrape.NewScraper(
 		chromeCtx,
 		dao,
 		redditClient,
 		s3Client,
 		config.AwsBucketName,
+		apifbClient,
 		logger)
 
 	err := scraper.ScrapeNewPosts()

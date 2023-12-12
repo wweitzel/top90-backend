@@ -22,7 +22,8 @@ func main() {
 		config.ApiFootballRapidApiHost,
 		config.ApiFootballRapidApiKey,
 		config.ApiFootballRapidApiKeyBackup,
-		10*time.Second)
+		10*time.Second,
+		config.ApiFootballCurrentSeason)
 
 	dbConn := init.DB(
 		config.DbUser,

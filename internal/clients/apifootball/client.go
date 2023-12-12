@@ -13,13 +13,15 @@ type Client struct {
 	apiKey          string
 	apiKeyBackup    string
 	useBackupApiKey bool
+	CurrentSeason   int
 }
 
 type Config struct {
-	Host         string
-	ApiKey       string
-	ApiKeyBackup string
-	Timeout      time.Duration
+	Host          string
+	ApiKey        string
+	ApiKeyBackup  string
+	Timeout       time.Duration
+	CurrentSeason int
 }
 
 const baseUrl = "https://api-football-v1.p.rapidapi.com/v3/"
@@ -32,10 +34,11 @@ func NewClient(cfg Config) Client {
 	c := http.Client{Timeout: cfg.Timeout}
 
 	return Client{
-		http:         c,
-		host:         cfg.Host,
-		apiKey:       cfg.ApiKey,
-		apiKeyBackup: cfg.ApiKeyBackup,
+		http:          c,
+		host:          cfg.Host,
+		apiKey:        cfg.ApiKey,
+		apiKeyBackup:  cfg.ApiKeyBackup,
+		CurrentSeason: cfg.CurrentSeason,
 	}
 }
 

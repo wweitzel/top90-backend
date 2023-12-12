@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/wweitzel/top90/internal/config/dotenv"
 	"github.com/wweitzel/top90/internal/jsonlogger"
@@ -25,6 +26,8 @@ type Config struct {
 	ApiFootballRapidApiHost      string
 	ApiFootballRapidApiKey       string
 	ApiFootballRapidApiKeyBackup string
+	ApiFootballCurrentSeason     int
+	ApiFootballPlayerLinkEnabled bool
 }
 
 // Load env file into system env variables and struct
@@ -54,6 +57,8 @@ func Load(fileNames ...string) Config {
 		ApiFootballRapidApiHost:      os.Getenv("API_FOOTBALL_RAPID_API_HOST"),
 		ApiFootballRapidApiKey:       os.Getenv("API_FOOTBALL_RAPID_API_KEY"),
 		ApiFootballRapidApiKeyBackup: os.Getenv("API_FOOTBALL_RAPID_API_KEY_BACKUP"),
+		ApiFootballCurrentSeason:     apiFootballCurrentSeason(),
+		ApiFootballPlayerLinkEnabled: apiFootballPlayerLinkEnabled(),
 	}
 }
 
@@ -83,4 +88,28 @@ func logLevel() slog.Leveler {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+func apiFootballCurrentSeason() int {
+	currentSeason := os.Getenv("API_FOOTBALL_CURRENT_SEASON")
+	if currentSeason == "" {
+		return time.Now().Year()
+	}
+	currentSeasonInt, err := strconv.Atoi(currentSeason)
+	if err != nil {
+		return time.Now().Year()
+	}
+	return currentSeasonInt
+}
+
+func apiFootballPlayerLinkEnabled() bool {
+	enabled := os.Getenv("API_FOOTBALL_PLAYER_LINK_ENABLED")
+	if enabled == "" {
+		return false
+	}
+	playerLinkEnabled, err := strconv.ParseBool(enabled)
+	if err != nil {
+		return false
+	}
+	return playerLinkEnabled
 }
