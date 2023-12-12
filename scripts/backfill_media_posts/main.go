@@ -19,14 +19,12 @@ func main() {
 
 	init := cmd.NewInit(logger)
 
-	s3Client := init.S3Client(
-		s3.Config{
-			AccessKey:       config.AwsAccessKey,
-			SecretAccessKey: config.AwsSecretAccessKey,
-			Endpoint:        config.AwsS3Endpoint,
-			Logger:          logger,
-		},
-		config.AwsBucketName)
+	s3Client := init.S3Client(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+		Logger:          logger,
+	}, config.AwsBucketName)
 
 	redditClient := init.RedditClient(10 * time.Second)
 
@@ -47,6 +45,7 @@ func main() {
 		redditClient,
 		s3Client,
 		config.AwsBucketName,
+		nil,
 		logger)
 
 	posts, err := redditClient.GetMediaPosts()

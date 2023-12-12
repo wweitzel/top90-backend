@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/clients/reddit"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/db/dao"
@@ -17,6 +18,7 @@ type Scraper struct {
 	ctx          context.Context
 	dao          dao.Top90DAO
 	redditClient reddit.Client
+	apifbClient  *apifootball.Client
 	s3Client     s3.S3Client
 	s3Buckent    string
 	logger       *slog.Logger
@@ -28,6 +30,7 @@ func NewScraper(
 	redditClient reddit.Client,
 	s3Client s3.S3Client,
 	s3Bucket string,
+	apifbClient *apifootball.Client,
 	logger *slog.Logger,
 ) Scraper {
 	if logger == nil {
@@ -40,6 +43,7 @@ func NewScraper(
 		redditClient: redditClient,
 		s3Client:     s3Client,
 		s3Buckent:    s3Bucket,
+		apifbClient:  apifbClient,
 		logger:       logger,
 	}
 }
@@ -97,14 +101,22 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 		return nil
 	}
 
-	createdAt := createdTime(p)
-
 	goal := db.Goal{
 		RedditFullname:      redditFullName,
-		RedditPostCreatedAt: createdAt,
+		RedditPostCreatedAt: createdTime(p),
 		RedditPostTitle:     p.Data.Title,
 		RedditLinkUrl:       p.Data.URL,
 		FixtureId:           db.NullInt(fixture.Id),
+	}
+
+	if s.apifbClient != nil {
+		player, event, err := s.linkPlayerWithApifootball(p.Data.Title, fixture.Id)
+		if err != nil {
+			s.logger.Warn("Failed linking player with apifootball event")
+		}
+		goal.PlayerId = db.NullInt(player.Id)
+		goal.Type = db.NullString(event.Type)
+		goal.TypeDetail = db.NullString(event.Detail)
 	}
 
 	loader := NewLoader(

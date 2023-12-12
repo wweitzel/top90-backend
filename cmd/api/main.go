@@ -19,14 +19,12 @@ func main() {
 
 	init := cmd.NewInit(logger)
 
-	s3Client := init.S3Client(
-		s3.Config{
-			AccessKey:       config.AwsAccessKey,
-			SecretAccessKey: config.AwsSecretAccessKey,
-			Endpoint:        config.AwsS3Endpoint,
-			Logger:          logger,
-		},
-		config.AwsBucketName)
+	s3Client := init.S3Client(s3.Config{
+		AccessKey:       config.AwsAccessKey,
+		SecretAccessKey: config.AwsSecretAccessKey,
+		Endpoint:        config.AwsS3Endpoint,
+		Logger:          logger,
+	}, config.AwsBucketName)
 
 	db := init.DB(
 		config.DbUser,

@@ -2,6 +2,18 @@ package query
 
 import db "github.com/wweitzel/top90/internal/db/models"
 
+func GetPlayer(id int) (string, []any) {
+	query := "SELECT * FROM players WHERE id = $1"
+	return query, []any{id}
+}
+
+func PlayerExists(id int) (string, []any) {
+	query := "SELECT count(*) FROM players where id = $1"
+	var args []any
+	args = append(args, id)
+	return query, args
+}
+
 func UpsertPlayer(player db.Player) (string, []any) {
 	query := `
 		INSERT INTO players (id, name, first_name, last_name, age, nationality, height, weight, photo)

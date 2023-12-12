@@ -32,7 +32,8 @@ func main() {
 		config.ApiFootballRapidApiHost,
 		config.ApiFootballRapidApiKey,
 		config.ApiFootballRapidApiKeyBackup,
-		10*time.Second)
+		10*time.Second,
+		config.ApiFootballCurrentSeason)
 
 	leagues, _ := dao.GetLeagues()
 	for _, league := range leagues {

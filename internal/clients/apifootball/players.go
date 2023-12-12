@@ -11,6 +11,25 @@ import (
 
 const playersUrl = baseUrl + "players"
 
+func (c *Client) GetPlayer(id int, season int) (db.Player, error) {
+	query := url.Values{}
+	query.Set("id", strconv.Itoa(id))
+	query.Set("season", strconv.Itoa(season))
+
+	resp, err := c.doGet(playersUrl, query)
+	if err != nil {
+		return db.Player{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return db.Player{}, errors.New(resp.Status)
+	}
+
+	r := GetPlayersResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&r)
+	return r.toPlayers()[0], err
+}
+
 func (c *Client) GetPlayers(teamId, season int) ([]db.Player, error) {
 	var players []db.Player
 	r, err := c.getPlayers(teamId, season, 1)

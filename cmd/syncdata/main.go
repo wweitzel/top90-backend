@@ -31,9 +31,10 @@ func main() {
 		config.ApiFootballRapidApiHost,
 		config.ApiFootballRapidApiKey,
 		config.ApiFootballRapidApiKeyBackup,
-		10*time.Second)
+		10*time.Second,
+		config.ApiFootballCurrentSeason)
 
-	syncData := syncdata.New(dao, client, logger)
+	syncData := syncdata.New(dao, *client, logger)
 
 	logger.Info("Syncing leagues...")
 	err := syncData.Leagues()

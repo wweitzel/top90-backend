@@ -68,14 +68,15 @@ func (i Init) RedditClient(timeout time.Duration) reddit.Client {
 	return *client
 }
 
-func (i Init) ApiFootballClient(host string, apiKey string, apiKeyBackup string, timeout time.Duration) apifootball.Client {
+func (i Init) ApiFootballClient(host string, apiKey string, apiKeyBackup string, timeout time.Duration, currentSeason int) *apifootball.Client {
 	client := apifootball.NewClient(apifootball.Config{
-		Host:         host,
-		ApiKey:       apiKey,
-		ApiKeyBackup: apiKeyBackup,
-		Timeout:      timeout,
+		Host:          host,
+		ApiKey:        apiKey,
+		ApiKeyBackup:  apiKeyBackup,
+		Timeout:       timeout,
+		CurrentSeason: currentSeason,
 	})
-	return client
+	return &client
 }
 
 func (i Init) Top90Client(timeout time.Duration) top90.Client {
