@@ -3,6 +3,7 @@ package apifootball
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -27,6 +28,11 @@ func (c *Client) GetPlayer(id int, season int) (db.Player, error) {
 
 	r := GetPlayersResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&r)
+
+	players := r.toPlayers()
+	if len(players) < 1 {
+		return db.Player{}, fmt.Errorf("no player returned from apifootball")
+	}
 	return r.toPlayers()[0], err
 }
 

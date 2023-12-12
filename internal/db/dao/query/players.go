@@ -8,7 +8,7 @@ func GetPlayer(id int) (string, []any) {
 }
 
 func PlayerExists(id int) (string, []any) {
-	query := "SELECT count(*) FROM players where id = $1"
+	query := "SELECT count(*) FROM players WHERE id = $1"
 	var args []any
 	args = append(args, id)
 	return query, args
@@ -39,5 +39,16 @@ func UpsertPlayer(player db.Player) (string, []any) {
 		player.Height,
 		player.Weight,
 		player.Photo)
+	return query, args
+}
+
+func SearchPlayers(searchTerm string) (string, []any) {
+	query := `
+		SELECT * FROM players
+		WHERE SIMILARITY(first_name, $1) > 0.4 OR
+		SIMILARITY(last_name, $2) > 0.4 OR
+		SIMILARITY(CONCAT(first_name, ' ', last_name), $3) > 0.4 limit 10`
+	var args []any
+	args = append(args, searchTerm, searchTerm, searchTerm)
 	return query, args
 }

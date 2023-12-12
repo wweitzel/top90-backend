@@ -25,3 +25,10 @@ func (dao *PostgresDAO) UpsertPlayer(player db.Player) (db.Player, error) {
 	err := dao.DB.QueryRowx(query, args...).StructScan(&insertedPlayer)
 	return insertedPlayer, err
 }
+
+func (dao *PostgresDAO) SearchPlayers(searchTerm string) ([]db.Player, error) {
+	query, args := query.SearchPlayers(searchTerm)
+	var players []db.Player
+	err := dao.DB.Select(&players, query, args...)
+	return players, err
+}
