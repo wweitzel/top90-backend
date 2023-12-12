@@ -23,6 +23,7 @@ type Top90DAO interface {
 	InsertLeague(*db.League) (*db.League, error)
 	InsertTeam(*db.Team) (*db.Team, error)
 	PlayerExists(id int) (bool, error)
+	SearchPlayers(searchTerm string) ([]db.Player, error)
 	UpsertPlayer(db.Player) (db.Player, error)
 	UpdateGoal(id string, goalUpdate db.Goal) (updatedGoal db.Goal, err error)
 	UpdateLeague(id int, leagueUpdate db.League) (updatedLeague db.League, err error)
