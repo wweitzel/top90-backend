@@ -53,3 +53,14 @@ func SearchPlayers(searchTerm string) (string, []any) {
 	args = append(args, searchTerm, searchTerm, searchTerm, searchTerm)
 	return query, args
 }
+
+func GetTopScorers() string {
+	query := `
+		SELECT players.*, COUNT(goals.player_id) AS total_goals
+		FROM players
+		LEFT JOIN goals ON players.id = goals.player_id
+		GROUP BY players.id, players.name
+		ORDER BY total_goals DESC
+		LIMIT 15`
+	return query
+}
