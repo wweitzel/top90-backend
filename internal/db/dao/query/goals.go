@@ -119,6 +119,12 @@ func addGetGoalsJoinAndWhere(query string, args []any, filter db.GetGoalsFilter,
 	query = query + fmt.Sprintf(" WHERE goals.reddit_post_title ILIKE $%d", *variableCount)
 	args = append(args, filter.SearchTerm)
 
+	if filter.PlayerId != 0 {
+		*variableCount++
+		query = query + fmt.Sprintf(" AND goals.player_id = $%d", *variableCount)
+		args = append(args, filter.PlayerId)
+	}
+
 	if filter.LeagueId != 0 {
 		*variableCount++
 		query = query + fmt.Sprintf(" AND fixtures.league_id = $%d", *variableCount)

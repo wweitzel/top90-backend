@@ -11,6 +11,7 @@ type GetGoalsFilter struct {
 	Season     int
 	TeamId     int
 	FixtureId  int
+	PlayerId   int
 }
 
 type Goal struct {
