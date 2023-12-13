@@ -37,6 +37,11 @@ func (h PlayerHandler) SearchPlayers(w http.ResponseWriter, r *http.Request) {
 
 	var players []db.Player
 	if request.SearchTerm == "" {
+		players, err = h.dao.GetTopScorers()
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 		ok(w, SearchPlayersResponse{Players: players})
 		return
 	}

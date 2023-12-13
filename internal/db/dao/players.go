@@ -32,3 +32,10 @@ func (dao *PostgresDAO) SearchPlayers(searchTerm string) ([]db.Player, error) {
 	err := dao.DB.Select(&players, query, args...)
 	return players, err
 }
+
+func (dao *PostgresDAO) GetTopScorers() ([]db.Player, error) {
+	query := query.GetTopScorers()
+	var players []db.Player
+	err := dao.DB.Unsafe().Select(&players, query)
+	return players, err
+}

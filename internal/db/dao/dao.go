@@ -17,6 +17,7 @@ type Top90DAO interface {
 	GetPlayer(id int) (db.Player, error)
 	GetTeams(filter db.GetTeamsFilter) ([]db.Team, error)
 	GetTeamsForLeagueAndSeason(leagueId, season int) ([]db.Team, error)
+	GetTopScorers() ([]db.Player, error)
 	GoalExists(redditFullname string) (bool, error)
 	InsertFixture(*db.Fixture) (*db.Fixture, error)
 	InsertGoal(*db.Goal) (*db.Goal, error)
