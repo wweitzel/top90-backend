@@ -27,6 +27,7 @@ type Top90DAO interface {
 	SearchPlayers(searchTerm string) ([]db.Player, error)
 	UpsertPlayer(db.Player) (db.Player, error)
 	UpdateGoal(id string, goalUpdate db.Goal) (updatedGoal db.Goal, err error)
+	UpdateGoalPlayerNull(goalId string) error
 	UpdateLeague(id int, leagueUpdate db.League) (updatedLeague db.League, err error)
 }
 

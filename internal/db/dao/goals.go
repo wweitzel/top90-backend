@@ -74,3 +74,11 @@ func (dao *PostgresDAO) UpdateGoal(id string, goalUpdate db.Goal) (db.Goal, erro
 	err := dao.DB.QueryRowx(query, args...).StructScan(&updatedGoal)
 	return updatedGoal, err
 }
+
+func (dao *PostgresDAO) UpdateGoalPlayerNull(goalId string) error {
+	query := "UPDATE goals SET player_id = null, type = null, type_detail = null WHERE id = $1"
+	var args []any
+	args = append(args, goalId)
+	_, err := dao.DB.Exec(query, args...)
+	return err
+}
