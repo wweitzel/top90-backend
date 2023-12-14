@@ -66,7 +66,7 @@ func (s *Scraper) findEventWithDeviation(events []apifootball.Event, eventType s
 	if err == nil {
 		return event, nil
 	}
-	event, err = s.findEventForTime(events, eventType, elapsedInt-1, extraInt-1, title)
+	event, err = s.findEventForTime(events, eventType, elapsedInt, extraInt-1, title)
 	if err == nil {
 		return event, nil
 	}
