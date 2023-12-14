@@ -110,7 +110,7 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 	}
 
 	if s.apifbClient != nil {
-		player, event, err := s.linkPlayerWithApifootball(p.Data.Title, fixture.Id)
+		player, event, err := s.linkPlayerWithApiFootball(p.Data.Title, fixture.Id)
 		if err != nil {
 			s.logger.Warn("Failed linking player with apifootball event")
 		}
