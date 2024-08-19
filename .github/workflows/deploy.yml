@@ -91,7 +91,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker stop top90-server || true
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker container prune -f
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker run --env-file .env -p 7171:7171 -d --restart unless-stopped --name top90-server wweitzel/top90
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker run --env-file top90/env -p 7171:7171 -d --restart unless-stopped --name top90-server wweitzel/top90
           ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker image prune -f
 
   syncdata:
