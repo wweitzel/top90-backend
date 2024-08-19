@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -88,6 +89,17 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 	}
 	if fixture == nil {
 		s.logger.Debug("No fixture found in db", "title", p.Data.Title)
+		return nil
+	}
+
+	//  1 - World Cup
+	//  2 - Champions League
+	//  3 - Europa League
+	// 39 - Premier League
+	// 45 - FA Cup
+	supportedLeagueIds := []int{1, 2, 3, 39, 45}
+	if !slices.Contains(supportedLeagueIds, fixture.LeagueId) {
+		s.logger.Debug("Fixture not in supported leagues", "title", p.Data.Title, "leagueId", fixture.LeagueId)
 		return nil
 	}
 
