@@ -30,6 +30,10 @@ func badRequest(w http.ResponseWriter, msg string) {
 	respond(w, http.StatusBadRequest, ErrorResponse{Message: msg})
 }
 
+func unauthorized(w http.ResponseWriter, msg string) {
+	respond(w, http.StatusUnauthorized, ErrorResponse{Message: msg})
+}
+
 func unmarshal[T any](jsonStr string) (*T, error) {
 	decodedJson, err := url.QueryUnescape(jsonStr)
 	if err != nil {

@@ -8,6 +8,7 @@ require (
 	github.com/chromedp/chromedp v0.9.2
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/gocolly/colly v1.2.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.5
