@@ -35,6 +35,7 @@ func NewServer(dao dao.Top90DAO, s3Client s3.S3Client, config config.Config, log
 
 func (s *Server) routes() {
 	welcomeHandler := handlers.WelcomeHandler{}
+	loginHandler := handlers.LoginHandler{}
 	fixturesHandler := handlers.NewFixtureHandler(s.dao)
 	goalHandler := handlers.NewGoalHandler(s.dao, s.s3Client, s.config.AwsBucketName)
 	leagueHandler := handlers.NewLeagueHandler(s.dao)
@@ -51,6 +52,7 @@ func (s *Server) routes() {
 	s.router.Get("/message_preview/{id}", messageHandler.GetPreview)
 	s.router.Get("/players", playerHandler.SearchPlayers)
 	s.router.Get("/teams", teamsHandler.GetTeams)
+	s.router.Get("/login", loginHandler.Login)
 }
 
 func enableCors(w *http.ResponseWriter) {
