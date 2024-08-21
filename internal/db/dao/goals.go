@@ -82,3 +82,15 @@ func (dao *PostgresDAO) UpdateGoalPlayerNull(goalId string) error {
 	_, err := dao.DB.Exec(query, args...)
 	return err
 }
+
+func (dao *PostgresDAO) DeleteGoal(id string) (int64, error) {
+	query := "DELETE FROM goals WHERE id = $1"
+	var args []any
+	args = append(args, id)
+	result, err := dao.DB.Exec(query, args...)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return rowsAffected, err
+}

@@ -29,6 +29,7 @@ type Top90DAO interface {
 	UpdateGoal(id string, goalUpdate db.Goal) (updatedGoal db.Goal, err error)
 	UpdateGoalPlayerNull(goalId string) error
 	UpdateLeague(id int, leagueUpdate db.League) (updatedLeague db.League, err error)
+	DeleteGoal(id string) (int64, error)
 }
 
 type PostgresDAO struct {
