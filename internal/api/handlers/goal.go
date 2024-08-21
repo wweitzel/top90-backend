@@ -19,6 +19,10 @@ type GetGoalsRequest struct {
 	Filter     db.GetGoalsFilter `json:"filter"`
 }
 
+type DeleteGoalResponse struct {
+	RowsAffected int64 `json:"rowsAffected"`
+}
+
 type GetGoalsResponse struct {
 	Goals []db.Goal `json:"goals"`
 	Total int       `json:"total"`
@@ -82,6 +86,41 @@ func (h *GoalHandler) GetGoals(w http.ResponseWriter, r *http.Request) {
 		goals[i].ThumbnailPresignedUrl = h.presignedUrl(string(goals[i].ThumbnailS3Key))
 	}
 	ok(w, GetGoalsResponse{Goals: goals, Total: count})
+}
+
+func (h *GoalHandler) DeleteGoal(w http.ResponseWriter, r *http.Request) {
+	err := authorize(r)
+	if err != nil {
+		unauthorized(w, err.Error())
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+
+	goal, err := h.dao.GetGoal(id)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+
+	rowsAffected, err := h.dao.DeleteGoal(id)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+
+	err = h.s3Client.DeleteObject(string(goal.ThumbnailS3Key), h.s3Bucket)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+
+	err = h.s3Client.DeleteObject(string(goal.S3ObjectKey), h.s3Bucket)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	ok(w, DeleteGoalResponse{RowsAffected: rowsAffected})
 }
 
 func (h *GoalHandler) presignedUrl(key string) string {

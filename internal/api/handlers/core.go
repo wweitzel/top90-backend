@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+
+	"github.com/wweitzel/top90/internal/jwt"
 )
 
 type ErrorResponse struct {
@@ -46,4 +48,23 @@ func unmarshal[T any](jsonStr string) (*T, error) {
 		return nil, errors.New("error unmarshalling json")
 	}
 	return out, nil
+}
+
+func authorize(r *http.Request) error {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		return errors.New("missing authorization header")
+	}
+	tokenString = tokenString[len("Bearer "):]
+
+	token, err := jwt.ReadToken(tokenString)
+	if err != nil {
+		return errors.New("invalid token")
+	}
+
+	if !token.Admin {
+		return errors.New("must be admin")
+	}
+
+	return nil
 }

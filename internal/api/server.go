@@ -36,6 +36,7 @@ func NewServer(dao dao.Top90DAO, s3Client s3.S3Client, config config.Config, log
 func (s *Server) routes() {
 	welcomeHandler := handlers.WelcomeHandler{}
 	loginHandler := handlers.LoginHandler{}
+	optionsHandler := handlers.OptionsHandler{}
 	fixturesHandler := handlers.NewFixtureHandler(s.dao)
 	goalHandler := handlers.NewGoalHandler(s.dao, s.s3Client, s.config.AwsBucketName)
 	leagueHandler := handlers.NewLeagueHandler(s.dao)
@@ -46,8 +47,12 @@ func (s *Server) routes() {
 	s.router.Get("/", welcomeHandler.GetWelcome)
 	s.router.Get("/fixtures", fixturesHandler.GetFixtures)
 	s.router.Get("/fixtures/{id}", fixturesHandler.GetFixture)
+
 	s.router.Get("/goals", goalHandler.GetGoals)
 	s.router.Get("/goals/{id}", goalHandler.GetGoal)
+	s.router.Delete("/goals/{id}", goalHandler.DeleteGoal)
+	s.router.Options("/goals/{id}", optionsHandler.Default)
+
 	s.router.Get("/leagues", leagueHandler.GetLeagues)
 	s.router.Get("/message_preview/{id}", messageHandler.GetPreview)
 	s.router.Get("/players", playerHandler.SearchPlayers)
@@ -57,6 +62,8 @@ func (s *Server) routes() {
 
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "*")
+	(*w).Header().Set("Access-Control-Allow-Headers", "*")
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
