@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/wweitzel/top90/internal/api/handlers"
@@ -35,7 +36,7 @@ func NewServer(dao dao.Top90DAO, s3Client s3.S3Client, config config.Config, log
 
 func (s *Server) routes() {
 	welcomeHandler := handlers.WelcomeHandler{}
-	loginHandler := handlers.LoginHandler{}
+	authHandler := handlers.AuthHandler{}
 	optionsHandler := handlers.OptionsHandler{}
 	fixturesHandler := handlers.NewFixtureHandler(s.dao)
 	goalHandler := handlers.NewGoalHandler(s.dao, s.s3Client, s.config.AwsBucketName)
@@ -57,13 +58,18 @@ func (s *Server) routes() {
 	s.router.Get("/message_preview/{id}", messageHandler.GetPreview)
 	s.router.Get("/players", playerHandler.SearchPlayers)
 	s.router.Get("/teams", teamsHandler.GetTeams)
-	s.router.Get("/login", loginHandler.Login)
+
+	s.router.Post("/login", authHandler.Login)
+	s.router.Options("/login", optionsHandler.Default)
+	s.router.Post("/logout", authHandler.Logout)
+	s.router.Options("/logout", optionsHandler.Default)
 }
 
 func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "*")
+	(*w).Header().Set("Access-Control-Allow-Origin", os.Getenv("TOP90_ORIGIN"))
+	(*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 	(*w).Header().Set("Access-Control-Allow-Headers", "*")
+	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
