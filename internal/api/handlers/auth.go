@@ -104,6 +104,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: true,
+		Domain:   "top90.io",
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
@@ -118,6 +119,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: false,
+		Domain:   "top90.io",
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
