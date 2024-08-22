@@ -63,6 +63,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Value:    token,
 		MaxAge:   3600,
+		Domain:   "top90.io",
 		HttpOnly: true,
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
@@ -78,6 +79,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    "true",
 		MaxAge:   3600,
 		HttpOnly: false,
+		Domain:   "top90.io",
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
