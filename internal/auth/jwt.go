@@ -22,7 +22,7 @@ func CreateToken(admin bool) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"admin": admin,
-			"exp":   time.Now().Add(time.Minute * 1).Unix(),
+			"exp":   time.Now().Add(time.Hour * 1).Unix(),
 		})
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
