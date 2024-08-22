@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/wweitzel/top90/internal/jwt"
+	"github.com/wweitzel/top90/internal/auth"
 )
 
 type ErrorResponse struct {
@@ -51,15 +51,19 @@ func unmarshal[T any](jsonStr string) (*T, error) {
 }
 
 func authorize(r *http.Request) error {
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
-		return errors.New("missing authorization header")
-	}
-	tokenString = tokenString[len("Bearer "):]
-
-	token, err := jwt.ReadToken(tokenString)
+	authCookie, err := r.Cookie("top90-auth-token")
 	if err != nil {
-		return errors.New("invalid token")
+		return errors.New(err.Error())
+	}
+
+	tokenString, err := auth.ReadCookie(*authCookie)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+
+	token, err := auth.ReadToken(tokenString)
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
 	if !token.Admin {

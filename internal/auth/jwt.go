@@ -1,16 +1,11 @@
-package jwt
+package auth
 
 // LoginService to provide user login with JWT token support
 import (
-	"fmt"
-	"os"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-)
-
-var (
-	secretKey = []byte(os.Getenv("TOP90_JWT_SECRET"))
 )
 
 type Token struct {
@@ -44,7 +39,7 @@ func ReadToken(tokenString string) (Token, error) {
 		return Token{}, err
 	}
 	if !requestToken.Valid {
-		return Token{}, fmt.Errorf("invalid token")
+		return Token{}, errors.New("invalid token")
 	}
 
 	var token Token
