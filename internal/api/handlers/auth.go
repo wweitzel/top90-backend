@@ -58,12 +58,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	domain := os.Getenv("TOP90_COOKIE_DOMAIN")
+	if domain == "" {
+		internalServerError(w, errors.New("invalid value for TOP90_COOKIE_DOMAIN env variable"))
+		return
+	}
+
 	authCookie, err := auth.SignCookie(http.Cookie{
 		Name:     "top90-auth-token",
 		Path:     "/",
 		Value:    token,
 		MaxAge:   3600,
-		Domain:   "top90.io",
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
@@ -79,7 +85,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    "true",
 		MaxAge:   3600,
 		HttpOnly: false,
-		Domain:   "top90.io",
+		Domain:   domain,
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
@@ -100,13 +106,19 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	domain := os.Getenv("TOP90_COOKIE_DOMAIN")
+	if domain == "" {
+		internalServerError(w, errors.New("invalid value for TOP90_COOKIE_DOMAIN env variable"))
+		return
+	}
+
 	authCookie, err := auth.SignCookie(http.Cookie{
 		Name:     "top90-auth-token",
 		Path:     "/",
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Domain:   "top90.io",
+		Domain:   domain,
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
@@ -121,7 +133,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: false,
-		Domain:   "top90.io",
+		Domain:   domain,
 		Secure:   useScureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
