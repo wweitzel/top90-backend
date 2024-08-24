@@ -101,6 +101,12 @@ func (s chromeDpScraper) getVideoSourceNetwork(ctx context.Context, url string) 
 func getSource(nodes []*cdp.Node, url string) string {
 	for _, node := range nodes {
 		sourceUrl := node.AttributeValue("src")
+
+		id := node.AttributeValue("id")
+		if (strings.HasPrefix(url, "https://streamin.one") || strings.HasPrefix(url, "https://streamin.me")) && id == "video" {
+			return sourceUrl
+		}
+
 		// Sometimes streamff sources are a relative path
 		if strings.HasPrefix(url, "https://streamff") && strings.HasPrefix(sourceUrl, "/uploads") {
 			sourceUrl = "https://streamff.com" + sourceUrl
