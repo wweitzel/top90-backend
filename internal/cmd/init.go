@@ -97,7 +97,7 @@ func (i Init) ChromeDP() (context.Context, context.CancelFunc) {
 	ctx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(ctx)
 	err := chromedp.Run(ctx)
-	if err == nil {
+	if err != nil {
 		cancel()
 		i.Exit("Failed initializing chromedp", err)
 	}
