@@ -50,10 +50,10 @@ jobs:
           touch keys/defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-scraper
           EOF
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
           docker image prune -f
           EOF
 
@@ -121,9 +121,9 @@ jobs:
           touch keys/defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-syncdata
           EOF
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem -p 2222 wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
           docker image prune -f
           EOF

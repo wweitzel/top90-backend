@@ -85,7 +85,7 @@ func (i Init) Top90Client(timeout time.Duration) top90.Client {
 	})
 }
 
-func (i Init) ChromeDP() context.Context {
+func (i Init) ChromeDP() (context.Context, context.CancelFunc) {
 	const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) " +
 		"AppleWebKit/537.36 (KHTML, like Gecko) " +
 		"Chrome/77.0.3830.0 Safari/537.36"
@@ -95,12 +95,13 @@ func (i Init) ChromeDP() context.Context {
 		chromedp.UserAgent(userAgent),
 	)
 	ctx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
-	ctx, _ = chromedp.NewContext(ctx)
+	ctx, cancel := chromedp.NewContext(ctx)
 	err := chromedp.Run(ctx)
-	if err != nil {
+	if err == nil {
+		cancel()
 		i.Exit("Failed initializing chromedp", err)
 	}
-	return ctx
+	return ctx, cancel
 }
 
 func (i Init) Migrate(db *sql.DB) *migrate.Migrate {

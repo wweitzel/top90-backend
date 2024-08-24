@@ -38,7 +38,8 @@ func main() {
 
 	dao := init.Dao(db)
 
-	chromeCtx := init.ChromeDP()
+	chromeCtx, cancel := init.ChromeDP()
+	defer cancel()
 
 	var apifbClient *apifootball.Client
 	if config.ApiFootballPlayerLinkEnabled {

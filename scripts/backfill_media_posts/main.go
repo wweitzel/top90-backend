@@ -37,7 +37,8 @@ func main() {
 
 	dao := init.Dao(db)
 
-	chromeCtx := init.ChromeDP()
+	chromeCtx, cancel := init.ChromeDP()
+	defer cancel()
 
 	scraper := scrape.NewScraper(
 		chromeCtx,
