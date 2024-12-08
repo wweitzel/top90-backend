@@ -63,22 +63,27 @@ func InsertFixture(fixture *db.Fixture) (string, []any) {
 
 func getFixturesWhereClause(filter db.GetFixturesFilter, args []any) (string, []any) {
 	whereClause := ""
+	p := newParams()
 
 	if filter.LeagueId != 0 {
-		whereClause = whereClause + " league_id = $1"
+		whereClause += " league_id = " + p.next()
 		args = append(args, filter.LeagueId)
 	} else {
-		whereClause = whereClause + " $1"
-		args = append(args, "TRUE")
+		whereClause += " TRUE"
+	}
+
+	if len(filter.LeagueIds) != 0 && filter.LeagueId == 0 {
+		whereClause += " AND league_id IN " + p.in(filter.LeagueIds, &args)
 	}
 
 	if !filter.Date.IsZero() {
 		searchStartDate := filter.Date.Add(-12 * time.Hour)
 		searchEndtDate := filter.Date.Add(12 * time.Hour)
 
-		whereClause = whereClause + " AND fixtures.date BETWEEN $2 AND $3"
+		whereClause += " AND fixtures.date BETWEEN " + p.next() + " AND " + p.next()
 		args = append(args, searchStartDate)
 		args = append(args, searchEndtDate)
 	}
+
 	return whereClause, args
 }
