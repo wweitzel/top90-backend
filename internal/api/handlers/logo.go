@@ -24,7 +24,7 @@ func NewLogoHandler() *LogoHandler {
 func (h *LogoHandler) GetLogo(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	url := "https://media.api-sports.io/football/leagues/" + id + ".png"
+	url := "https://media.api-sports.io/football/teams/" + id + ".png"
 	img, contentType, err := fetchImageWithBackoff(url)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to fetch image: %v", err))
