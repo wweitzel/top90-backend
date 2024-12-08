@@ -30,6 +30,7 @@ func respond(w http.ResponseWriter, statusCode int, resp any) {
 
 func respondImage(w http.ResponseWriter, statusCode int, contentType string, img []byte) {
 	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "max-age=86400")
 	w.WriteHeader(statusCode)
 	w.Write(img)
 }
