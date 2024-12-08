@@ -13,6 +13,14 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+func ok(w http.ResponseWriter, resp any) {
+	respond(w, http.StatusOK, resp)
+}
+
+func okImage(w http.ResponseWriter, contentType string, img []byte) {
+	respondImage(w, http.StatusOK, contentType, img)
+}
+
 func respond(w http.ResponseWriter, statusCode int, resp any) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -20,8 +28,10 @@ func respond(w http.ResponseWriter, statusCode int, resp any) {
 	w.Write(json)
 }
 
-func ok(w http.ResponseWriter, resp any) {
-	respond(w, http.StatusOK, resp)
+func respondImage(w http.ResponseWriter, statusCode int, contentType string, img []byte) {
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(statusCode)
+	w.Write(img)
 }
 
 func internalServerError(w http.ResponseWriter, err error) {

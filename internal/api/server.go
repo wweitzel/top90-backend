@@ -44,6 +44,7 @@ func (s *Server) routes() {
 	messageHandler := handlers.NewMessageHandler(s.dao, s.s3Client, s.config.AwsBucketName)
 	playerHandler := handlers.NewPlayerHandler(s.dao)
 	teamsHandler := handlers.NewTeamHandler(s.dao)
+	logoHandler := handlers.NewLogoHandler()
 
 	s.router.Get("/", welcomeHandler.GetWelcome)
 	s.router.Get("/fixtures", fixturesHandler.GetFixtures)
@@ -58,6 +59,7 @@ func (s *Server) routes() {
 	s.router.Get("/message_preview/{id}", messageHandler.GetPreview)
 	s.router.Get("/players", playerHandler.SearchPlayers)
 	s.router.Get("/teams", teamsHandler.GetTeams)
+	s.router.Get("/logo/{id}", logoHandler.GetLogo)
 
 	s.router.Post("/login", authHandler.Login)
 	s.router.Options("/login", optionsHandler.Default)
