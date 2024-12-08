@@ -3,8 +3,9 @@ package db
 import "time"
 
 type GetFixturesFilter struct {
-	LeagueId int
-	Date     time.Time
+	LeagueId  int
+	LeagueIds []int
+	Date      time.Time
 }
 
 type Teams struct {

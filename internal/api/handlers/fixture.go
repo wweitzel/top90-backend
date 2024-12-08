@@ -67,6 +67,8 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 	filter.LeagueId = request.LeagueId
 	if request.TodayOnly {
 		filter.Date = time.Now()
+		supportedLeagueIds := []int{1, 2, 3, 39, 45}
+		filter.LeagueIds = supportedLeagueIds
 	}
 	fixtures, err := h.dao.GetFixtures(filter)
 	if err != nil {
