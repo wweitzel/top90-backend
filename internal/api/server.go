@@ -5,12 +5,45 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/wweitzel/top90/internal/api/handlers"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db/dao"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+func metricsMiddleware(next http.HandlerFunc, endpoint string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		requestsTotal.WithLabelValues(endpoint, r.Method).Inc()
+		next.ServeHTTP(w, r)
+		duration := time.Since(start)
+		requestDuration.WithLabelValues(endpoint, r.Method).Observe(duration.Seconds())
+	}
+}
+
+var (
+	requestsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total number of HTTP requests",
+		},
+		[]string{"endpoint", "method"},
+	)
+
+	requestDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_request_duration_seconds",
+			Help:    "Duration of HTTP requests",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"endpoint", "method"},
+	)
 )
 
 type Server struct {
@@ -50,7 +83,7 @@ func (s *Server) routes() {
 	s.router.Get("/fixtures", fixturesHandler.GetFixtures)
 	s.router.Get("/fixtures/{id}", fixturesHandler.GetFixture)
 
-	s.router.Get("/goals", goalHandler.GetGoals)
+	s.router.Get("/goals", metricsMiddleware(goalHandler.GetGoals, "goals"))
 	s.router.Get("/goals/{id}", goalHandler.GetGoal)
 	s.router.Delete("/goals/{id}", goalHandler.DeleteGoal)
 	s.router.Options("/goals/{id}", optionsHandler.Default)
