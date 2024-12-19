@@ -97,7 +97,8 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 	//  3 - Europa League
 	// 39 - Premier League
 	// 45 - FA Cup
-	supportedLeagueIds := []int{1, 2, 3, 39, 45}
+	// 48 - League Cup
+	supportedLeagueIds := []int{1, 2, 3, 39, 45, 48}
 	if !slices.Contains(supportedLeagueIds, fixture.LeagueId) {
 		s.logger.Debug("Fixture not in supported leagues", "title", p.Data.Title, "leagueId", fixture.LeagueId)
 		return nil
