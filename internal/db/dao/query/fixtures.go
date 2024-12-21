@@ -76,6 +76,12 @@ func getFixturesWhereClause(filter db.GetFixturesFilter, args []any) (string, []
 		whereClause += " AND league_id IN " + p.in(filter.LeagueIds, &args)
 	}
 
+	if filter.TeamId != 0 {
+		whereClause += " AND (home_team_id = " + p.next() + " OR away_team_id = " + p.next() + ")"
+		args = append(args, filter.TeamId)
+		args = append(args, filter.TeamId)
+	}
+
 	if !filter.Date.IsZero() {
 		searchStartDate := filter.Date.Add(-12 * time.Hour)
 		searchEndtDate := filter.Date.Add(12 * time.Hour)

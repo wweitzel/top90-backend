@@ -16,6 +16,7 @@ type GetFixturesResponse struct {
 
 type GetFixturesRequest struct {
 	LeagueId  int  `json:"leagueId"`
+	TeamId    int  `json:"teamId"`
 	TodayOnly bool `json:"todayOnly"`
 }
 
@@ -58,13 +59,14 @@ func (h *FixtureHandler) GetFixtures(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-	if request.LeagueId == 0 && !request.TodayOnly {
-		badRequest(w, "LeagueId query param must be set if todayOnly is not true.")
+	if request.LeagueId == 0 && request.TeamId == 0 && !request.TodayOnly {
+		badRequest(w, "LeagueId or TeamId query param must be set if todayOnly is not true.")
 		return
 	}
 
 	var filter db.GetFixturesFilter
 	filter.LeagueId = request.LeagueId
+	filter.TeamId = request.TeamId
 	if request.TodayOnly {
 		filter.Date = time.Now()
 		supportedLeagueIds := []int{1, 2, 3, 39, 45, 48}
