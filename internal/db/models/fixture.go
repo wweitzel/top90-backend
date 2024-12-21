@@ -5,6 +5,7 @@ import "time"
 type GetFixturesFilter struct {
 	LeagueId  int
 	LeagueIds []int
+	TeamId    int
 	Date      time.Time
 }
 
