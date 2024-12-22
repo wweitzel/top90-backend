@@ -12,10 +12,22 @@ func newParams() params {
 	return params{count: 1}
 }
 
+func newParamsFrom(count int) params {
+	return params{count: count}
+}
+
 func (p *params) next() string {
 	val := "$" + strconv.Itoa(p.count)
 	p.count++
 	return val
+}
+
+func (p *params) nextUpdate(field string) string {
+	if p.count == 1 {
+		val := field + " = " + p.next()
+		return val
+	}
+	return ", " + field + " = " + p.next()
 }
 
 func (p *params) in(arr []int, args *[]any) string {
