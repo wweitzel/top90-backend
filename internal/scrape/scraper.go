@@ -86,7 +86,7 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 		return nil
 	}
 
-	twoMinutesAgo := time.Now().Add(-2 * time.Minute)
+	twoMinutesAgo := time.Now().UTC().Add(-2 * time.Minute)
 	recentGoals, err := s.dao.GetGoalsSince(twoMinutesAgo)
 	if err != nil {
 		return fmt.Errorf("failed to get recent goals: %w", err)
