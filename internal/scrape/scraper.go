@@ -2,12 +2,14 @@ package scrape
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
+	fuzzy "github.com/paul-mannino/go-fuzzywuzzy"
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/clients/reddit"
 	"github.com/wweitzel/top90/internal/clients/s3"
@@ -68,7 +70,7 @@ func (s *Scraper) ScrapeNewPosts() error {
 
 func (s *Scraper) Scrape(p reddit.Post) error {
 	if len(p.Data.Title) > 110 {
-		s.logger.Debug("Post title is lnoger than 110 characters")
+		s.logger.Debug("Post title is longer than 110 characters")
 		return nil
 	}
 
@@ -81,6 +83,20 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 	if goalExists {
 		s.logger.Debug("Goal already exists", "title", p.Data.Title)
 		return nil
+	}
+
+	oneHourAgo := time.Now().Add(-1 * time.Hour)
+	recentGoals, err := s.dao.GetGoalsSince(oneHourAgo)
+	if err != nil {
+		return fmt.Errorf("failed to get recent goals: %w", err)
+	}
+
+	for _, recentGoal := range recentGoals {
+		ratio := fuzzy.Ratio(p.Data.Title, recentGoal.RedditPostTitle)
+		if ratio > 80 {
+			s.logger.Debug("Similar goal already exists", "title", p.Data.Title, "existing_title", recentGoal.RedditPostTitle, "match_ratio", ratio)
+			return nil
+		}
 	}
 
 	fixture, err := s.findFixture(p)

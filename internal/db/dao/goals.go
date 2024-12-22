@@ -2,6 +2,7 @@ package dao
 
 import (
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/wweitzel/top90/internal/db/dao/query"
@@ -24,6 +25,13 @@ func (dao *PostgresDAO) GoalExists(redditFullname string) (bool, error) {
 
 func (dao *PostgresDAO) GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) ([]db.Goal, error) {
 	query, args := query.GetGoals(pagination, filter)
+	var goals []db.Goal
+	err := dao.DB.Select(&goals, query, args...)
+	return goals, err
+}
+
+func (dao *PostgresDAO) GetGoalsSince(since time.Time) ([]db.Goal, error) {
+	query, args := query.GetGoalsSince(since)
 	var goals []db.Goal
 	err := dao.DB.Select(&goals, query, args...)
 	return goals, err
