@@ -15,6 +15,7 @@ import (
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/db/dao"
 	db "github.com/wweitzel/top90/internal/db/models"
+	"github.com/wweitzel/top90/internal/email"
 )
 
 type Scraper struct {
@@ -95,6 +96,7 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 		ratio := fuzzy.Ratio(p.Data.Title, recentGoal.RedditPostTitle)
 		if ratio > 90 {
 			s.logger.Debug("Similar goal already exists", "title", p.Data.Title, "existing_title", recentGoal.RedditPostTitle, "match_ratio", ratio)
+			email.Send("[TOP90] [ALERT]", fmt.Sprintf("Similar goal already exists: %s\n\n%s\n\n%d%%", p.Data.Title, recentGoal.RedditPostTitle, ratio))
 			return nil
 		}
 	}
