@@ -85,15 +85,15 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 		return nil
 	}
 
-	oneHourAgo := time.Now().Add(-1 * time.Hour)
-	recentGoals, err := s.dao.GetGoalsSince(oneHourAgo)
+	twoMinutesAgo := time.Now().Add(-2 * time.Minute)
+	recentGoals, err := s.dao.GetGoalsSince(twoMinutesAgo)
 	if err != nil {
 		return fmt.Errorf("failed to get recent goals: %w", err)
 	}
 
 	for _, recentGoal := range recentGoals {
 		ratio := fuzzy.Ratio(p.Data.Title, recentGoal.RedditPostTitle)
-		if ratio > 80 {
+		if ratio > 90 {
 			s.logger.Debug("Similar goal already exists", "title", p.Data.Title, "existing_title", recentGoal.RedditPostTitle, "match_ratio", ratio)
 			return nil
 		}
