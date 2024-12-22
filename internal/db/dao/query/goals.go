@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"time"
 
 	db "github.com/wweitzel/top90/internal/db/models"
 )
@@ -38,6 +39,11 @@ func GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) (string, []any
 	args = append(args, pagination.Skip)
 	args = append(args, pagination.Limit)
 	return query, args
+}
+
+func GetGoalsSince(since time.Time) (string, []any) {
+	query := "SELECT * FROM goals WHERE reddit_post_created_at > $1 ORDER BY reddit_post_created_at DESC"
+	return query, []any{since}
 }
 
 func GoalExists(redditFullname string) (string, []any) {

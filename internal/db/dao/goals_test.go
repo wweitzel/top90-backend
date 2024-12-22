@@ -94,7 +94,8 @@ func TestGoalsDao(t *testing.T) {
 
 	uid2 := uuid.NewString()
 	goal2, _ := dao.InsertGoal(&db.Goal{
-		RedditFullname: uid2,
+		RedditFullname:      uid2,
+		RedditPostCreatedAt: now,
 	})
 	assertEqual(t, *goal2, db.Goal{
 		Id:             goal2.Id,
@@ -108,6 +109,17 @@ func TestGoalsDao(t *testing.T) {
 	goals, err := dao.GetGoals(db.Pagination{}, db.GetGoalsFilter{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(goals), 2)
+
+	oneHourAgo := now.Add(-1 * time.Hour)
+	goalsSince, err := dao.GetGoalsSince(oneHourAgo)
+	assert.NilError(t, err)
+	assert.Equal(t, len(goalsSince), 2)
+	assert.Equal(t, goalsSince[0].Id, goal.Id)
+
+	futureTime := now.Add(1 * time.Hour)
+	goalsSince, err = dao.GetGoalsSince(futureTime)
+	assert.NilError(t, err)
+	assert.Equal(t, len(goalsSince), 0)
 
 	goals, _ = dao.GetGoals(db.Pagination{}, db.GetGoalsFilter{FixtureId: fixture.Id})
 	assert.Equal(t, len(goals), 1)

@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	db "github.com/wweitzel/top90/internal/db/models"
 )
@@ -11,6 +13,7 @@ type Top90DAO interface {
 	GetFixture(id int) (db.Fixture, error)
 	GetFixtures(filter db.GetFixturesFilter) ([]db.Fixture, error)
 	GetGoals(pagination db.Pagination, filter db.GetGoalsFilter) ([]db.Goal, error)
+	GetGoalsSince(since time.Time) ([]db.Goal, error)
 	GetGoal(id string) (db.Goal, error)
 	GetLeagues() ([]db.League, error)
 	GetNewestGoal() (db.Goal, error)
