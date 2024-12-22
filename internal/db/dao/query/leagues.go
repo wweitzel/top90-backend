@@ -1,8 +1,6 @@
 package query
 
 import (
-	"fmt"
-
 	db "github.com/wweitzel/top90/internal/db/models"
 )
 
@@ -20,18 +18,16 @@ func InsertLeague(league *db.League) (string, []any) {
 func UpdateLeague(id int, leagueUpdate db.League) (string, []any) {
 	var args []any
 	query := "UPDATE leagues SET "
+	p := newParams()
 
-	variableCount := 0
 	if leagueUpdate.CurrentSeason != 0 {
-		variableCount += 1
-		query = query + fmt.Sprintf("current_season = $%d", variableCount)
+		query += p.nextUpdate("current_season")
 		args = append(args, leagueUpdate.CurrentSeason)
 	}
 
-	variableCount += 1
-	query = query + fmt.Sprintf(" WHERE id = $%d", variableCount)
+	query += " WHERE id = " + p.next()
 	args = append(args, id)
 
-	query = query + " RETURNING *"
+	query += " RETURNING *"
 	return query, args
 }

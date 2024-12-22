@@ -54,15 +54,16 @@ func InsertTeamQuery(team *db.Team) (string, []any) {
 }
 
 func getTeamsWhereClause(filter db.GetTeamsFilter, args []any) (string, []any) {
-	whereClause := "$1"
+	p := newParams()
+	whereClause := p.next()
 	args = append(args, "TRUE")
 
 	if filter.Country != "" {
-		whereClause = whereClause + fmt.Sprintf(" AND country = $%d", len(args)+1)
+		whereClause = whereClause + " AND country = " + p.next()
 		args = append(args, filter.Country)
 	}
 	if filter.SearchTerm != "" {
-		whereClause = whereClause + fmt.Sprintf(" AND name ILIKE $%d", len(args)+1)
+		whereClause = whereClause + " AND name ILIKE " + p.next()
 		args = append(args, fmt.Sprintf("%%%s%%", filter.SearchTerm))
 	}
 	return whereClause, args
