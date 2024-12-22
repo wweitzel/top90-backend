@@ -94,7 +94,7 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 
 	for _, recentGoal := range recentGoals {
 		ratio := fuzzy.Ratio(p.Data.Title, recentGoal.RedditPostTitle)
-		if ratio > 90 {
+		if ratio > 80 {
 			s.logger.Debug("Similar goal already exists", "title", p.Data.Title, "existing_title", recentGoal.RedditPostTitle, "match_ratio", ratio)
 			email.Send("[TOP90] [ALERT]", fmt.Sprintf("Similar goal already exists: %s\n\n%s\n\n%d%%", p.Data.Title, recentGoal.RedditPostTitle, ratio))
 			return nil
