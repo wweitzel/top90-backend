@@ -19,7 +19,7 @@ jobs:
           touch defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > defaultec2.pem
           chmod 400 defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i defaultec2.pem -N -L 5433:localhost:5432 wweitzel@24.56.249.228 -v &
+          ssh -o StrictHostKeyChecking=no -i defaultec2.pem -N -L 5433:localhost:5432 wweitzel@152.44.201.129 -v &
           sleep 2
           ./golang-migrate/migrate -source file://internal/db/migrations -database postgres://${{ secrets.TOP90_DB_USER }}:${{ secrets.TOP90_DB_PASSWORD }}@localhost:5433/redditsoccergoals up
 
@@ -50,10 +50,10 @@ jobs:
           touch keys/defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 <<EOF
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-scraper
           EOF
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 <<EOF
           docker image prune -f
           EOF
 
@@ -86,13 +86,13 @@ jobs:
           touch .env
           echo "${{ secrets.TOP90_ENV_FILE_PROD }}" | tr -d '\r' > .env
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90
       - name: Restart API
         run: |
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker stop top90-server || true
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker container prune -f
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker run --network="host" --env-file top90/.env -p 7171:7171 -d --restart unless-stopped --name top90-server wweitzel/top90
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 docker image prune -f
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 docker stop top90-server || true
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 docker container prune -f
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 docker run --network="host" --env-file top90/.env -p 7171:7171 -d --restart unless-stopped --name top90-server wweitzel/top90
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 docker image prune -f
 
   syncdata:
     name: Deploy syncdata
@@ -121,9 +121,9 @@ jobs:
           touch keys/defaultec2.pem
           echo "${{ secrets.EC2_PRIVATE_SSH_KEY }}" | tr -d '\r' > keys/defaultec2.pem
           chmod 400 keys/defaultec2.pem
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 <<EOF
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/top90-syncdata
           EOF
-          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@24.56.249.228 <<EOF
+          ssh -o StrictHostKeyChecking=no -i keys/defaultec2.pem wweitzel@152.44.201.129 <<EOF
           docker image prune -f
           EOF
