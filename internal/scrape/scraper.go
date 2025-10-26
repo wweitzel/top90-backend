@@ -71,7 +71,12 @@ func (s *Scraper) ScrapeNewPosts() error {
 
 func (s *Scraper) Scrape(p reddit.Post) error {
 	if len(p.Data.Title) > 110 {
-		s.logger.Debug("Post title is longer than 110 characters")
+		s.logger.Debug("Post title is longer than 110 characters. Skipped.")
+		return nil
+	}
+
+	if strings.Contains(p.Data.Title, 'U19') || strings.Contains(p.Data.Title, 'u19') {
+		s.logger.Debug("Post title contains U19. Skipped.")
 		return nil
 	}
 
