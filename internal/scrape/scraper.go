@@ -75,7 +75,7 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 		return nil
 	}
 
-	if strings.Contains(p.Data.Title, 'U19') || strings.Contains(p.Data.Title, 'u19') {
+	if strings.Contains(p.Data.Title, "U19") || strings.Contains(p.Data.Title, "u19") {
 		s.logger.Debug("Post title contains U19. Skipped.")
 		return nil
 	}
