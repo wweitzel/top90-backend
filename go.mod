@@ -1,6 +1,8 @@
 module github.com/wweitzel/top90
 
-go 1.23
+go 1.24
+
+toolchain go1.24.9
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
@@ -13,6 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
+	github.com/newrelic/go-agent/v3 v3.41.0
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/paul-mannino/go-fuzzywuzzy v0.0.0-20241117160931-a1769aeb6b21
 	github.com/prometheus/client_golang v1.20.5
@@ -79,6 +82,8 @@ require (
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
+	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

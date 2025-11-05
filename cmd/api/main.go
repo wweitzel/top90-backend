@@ -2,7 +2,9 @@ package main
 
 import (
 	"net/http"
+	"os"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/wweitzel/top90/internal/api"
 	"github.com/wweitzel/top90/internal/clients/s3"
 	"github.com/wweitzel/top90/internal/cmd"
@@ -37,11 +39,21 @@ func main() {
 
 	dao := init.Dao(db)
 
+	metrics, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("top90"),
+		newrelic.ConfigLicense(config.NewRelicLicenseKey),
+	)
+	if err != nil {
+		logger.Error("Failed to start New Relic", "error", err)
+		os.Exit(1)
+	}
+
 	s := api.NewServer(
 		dao,
 		s3Client,
 		config,
-		logger)
+		logger,
+		metrics)
 
 	port := ":7171"
 	logger.Info("Listening on http://127.0.0.1" + port)

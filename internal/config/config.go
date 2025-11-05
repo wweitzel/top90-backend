@@ -28,6 +28,7 @@ type Config struct {
 	ApiFootballRapidApiKeyBackup string
 	ApiFootballCurrentSeason     int
 	ApiFootballPlayerLinkEnabled bool
+	NewRelicLicenseKey           string
 }
 
 // Load env file into system env variables and struct
@@ -59,6 +60,8 @@ func Load(fileNames ...string) Config {
 		ApiFootballRapidApiKeyBackup: os.Getenv("API_FOOTBALL_RAPID_API_KEY_BACKUP"),
 		ApiFootballCurrentSeason:     apiFootballCurrentSeason(),
 		ApiFootballPlayerLinkEnabled: apiFootballPlayerLinkEnabled(),
+
+		NewRelicLicenseKey: os.Getenv("TOP90_NEW_RELIC_LICENSE_KEY"),
 	}
 }
 

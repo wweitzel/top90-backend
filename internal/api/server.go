@@ -13,6 +13,7 @@ import (
 	"github.com/wweitzel/top90/internal/config"
 	"github.com/wweitzel/top90/internal/db/dao"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -52,15 +53,17 @@ type Server struct {
 	router   *chi.Mux
 	config   config.Config
 	logger   *slog.Logger
+	metrics  *newrelic.Application
 }
 
-func NewServer(dao dao.Top90DAO, s3Client s3.S3Client, config config.Config, logger *slog.Logger) *Server {
+func NewServer(dao dao.Top90DAO, s3Client s3.S3Client, config config.Config, logger *slog.Logger, metrics *newrelic.Application) *Server {
 	s := &Server{
 		dao:      dao,
 		s3Client: s3Client,
 		router:   chi.NewRouter(),
 		config:   config,
 		logger:   logger,
+		metrics:  metrics,
 	}
 
 	s.routes()
@@ -79,25 +82,37 @@ func (s *Server) routes() {
 	teamsHandler := handlers.NewTeamHandler(s.dao)
 	logoHandler := handlers.NewLogoHandler()
 
-	s.router.Get("/", welcomeHandler.GetWelcome)
-	s.router.Get("/fixtures", fixturesHandler.GetFixtures)
-	s.router.Get("/fixtures/{id}", fixturesHandler.GetFixture)
+	// Helper to wrap and register routes
+	register := func(method, pattern string, handler http.HandlerFunc) {
+		_, h := newrelic.WrapHandleFunc(s.metrics, pattern, handler)
+		switch method {
+		case "GET":
+			s.router.Get(pattern, h)
+		case "POST":
+			s.router.Post(pattern, h)
+		case "DELETE":
+			s.router.Delete(pattern, h)
+		case "OPTIONS":
+			s.router.Options(pattern, h)
+		}
+	}
 
-	s.router.Get("/goals", metricsMiddleware(goalHandler.GetGoals, "goals"))
-	s.router.Get("/goals/{id}", goalHandler.GetGoal)
-	s.router.Delete("/goals/{id}", goalHandler.DeleteGoal)
-	s.router.Options("/goals/{id}", optionsHandler.Default)
-
-	s.router.Get("/leagues", leagueHandler.GetLeagues)
-	s.router.Get("/message_preview/{id}", messageHandler.GetPreview)
-	s.router.Get("/players", playerHandler.SearchPlayers)
-	s.router.Get("/teams", teamsHandler.GetTeams)
-	s.router.Get("/logo/{id}", logoHandler.GetLogo)
-
-	s.router.Post("/login", authHandler.Login)
-	s.router.Options("/login", optionsHandler.Default)
-	s.router.Post("/logout", authHandler.Logout)
-	s.router.Options("/logout", optionsHandler.Default)
+	register("GET", "/", welcomeHandler.GetWelcome)
+	register("GET", "/fixtures", fixturesHandler.GetFixtures)
+	register("GET", "/fixtures/{id}", fixturesHandler.GetFixture)
+	register("GET", "/goals", metricsMiddleware(goalHandler.GetGoals, "goals"))
+	register("GET", "/goals/{id}", goalHandler.GetGoal)
+	register("DELETE", "/goals/{id}", goalHandler.DeleteGoal)
+	register("OPTIONS", "/goals/{id}", optionsHandler.Default)
+	register("GET", "/leagues", leagueHandler.GetLeagues)
+	register("GET", "/message_preview/{id}", messageHandler.GetPreview)
+	register("GET", "/players", playerHandler.SearchPlayers)
+	register("GET", "/teams", teamsHandler.GetTeams)
+	register("GET", "/logo/{id}", logoHandler.GetLogo)
+	register("POST", "/login", authHandler.Login)
+	register("OPTIONS", "/login", optionsHandler.Default)
+	register("POST", "/logout", authHandler.Logout)
+	register("OPTIONS", "/logout", optionsHandler.Default)
 }
 
 func enableCors(w *http.ResponseWriter) {
