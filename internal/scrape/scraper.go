@@ -7,8 +7,11 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
 	fuzzy "github.com/paul-mannino/go-fuzzywuzzy"
 	"github.com/wweitzel/top90/internal/clients/apifootball"
 	"github.com/wweitzel/top90/internal/clients/reddit"
@@ -172,25 +175,88 @@ func (s *Scraper) Scrape(p reddit.Post) error {
 }
 
 func (s *Scraper) findVideoSourceUrl(p reddit.Post) (string, error) {
+	url := p.Data.URL
+
+	// Streamain: video is inside an embed iframe, scrape network traffic from embed URL
+	if strings.Contains(url, "streamain.com") {
+		embedUrl := toStreamainEmbedUrl(url)
+		s.logger.Debug("Streamain detected, using embed url", "embedUrl", embedUrl)
+		chromeDpScraper := NewChromDpScraper(s.logger)
+		sourceUrl, err := chromeDpScraper.getVideoSourceNetworkAny(s.ctx, embedUrl)
+		if err != nil {
+			return "", err
+		}
+		return sourceUrl, nil
+	}
+
 	collyScraper := NewCollyScraper(s.logger)
-	sourceUrl := collyScraper.getVideoSourceUrl(p.Data.URL)
+	sourceUrl := collyScraper.getVideoSourceUrl(url)
 
 	chromeDpScraper := NewChromDpScraper(s.logger)
 	if len(sourceUrl) == 0 {
-		sourceUrl = chromeDpScraper.getVideoSourceUrl(s.ctx, p.Data.URL)
+		sourceUrl = chromeDpScraper.getVideoSourceUrl(s.ctx, url)
 	}
 
-	if strings.HasPrefix(sourceUrl, "blob") && strings.Contains(p.Data.URL, "juststream") {
+	if strings.HasPrefix(sourceUrl, "blob") && strings.Contains(url, "juststream") {
 		var err error
-		sourceUrl, err = chromeDpScraper.getVideoSourceNetwork(s.ctx, p.Data.URL)
+		sourceUrl, err = chromeDpScraper.getVideoSourceNetwork(s.ctx, url)
 		if err != nil {
 			return "", err
 		}
 	} else if strings.HasPrefix(sourceUrl, "blob") {
-		// TODO: Need a way to download from any blob, not just juststream
-		//   For now, just set to empty string since we cant handle other blobs
 		sourceUrl = ""
 	}
+	return sourceUrl, nil
+}
+
+func toStreamainEmbedUrl(watchUrl string) string {
+	// https://streamain.com/en/hXWdPVgrGV4Wukd/watch -> https://streamain.com/embed/hXWdPVgrGV4Wukd
+	parts := strings.Split(watchUrl, "/")
+	for i, part := range parts {
+		if part == "en" && i+1 < len(parts) {
+			return "https://streamain.com/embed/" + parts[i+1]
+		}
+	}
+	return watchUrl
+}
+
+// Uses chromedp to scan network for video URLs (m3u8 or mp4)
+func (s chromeDpScraper) getVideoSourceNetworkAny(ctx context.Context, url string) (string, error) {
+	newTabCtx, cancel := chromedp.NewContext(ctx)
+	defer cancel()
+
+	newTabCtx, cancel = context.WithTimeout(newTabCtx, 15*time.Second)
+	defer cancel()
+
+	s.logger.Debug("New tab for network scanning", "url", url)
+
+	var sourceUrl string
+	var mu sync.Mutex
+
+	chromedp.ListenTarget(newTabCtx, func(ev interface{}) {
+		if ev, ok := ev.(*network.EventResponseReceived); ok {
+			u := ev.Response.URL
+			if strings.HasSuffix(u, ".m3u8") || strings.HasSuffix(u, ".mp4") ||
+				strings.Contains(u, ".m3u8?") || strings.Contains(u, ".mp4?") {
+				s.logger.Debug("Network event matched video url", "url", u)
+				mu.Lock()
+				sourceUrl = u
+				mu.Unlock()
+			}
+		}
+	})
+
+	err := chromedp.Run(newTabCtx,
+		network.Enable(),
+		chromedp.Navigate(url),
+		chromedp.Sleep(10*time.Second),
+	)
+	if err != nil && !strings.Contains(err.Error(), "context deadline exceeded") {
+		return "", err
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
 	return sourceUrl, nil
 }
 
