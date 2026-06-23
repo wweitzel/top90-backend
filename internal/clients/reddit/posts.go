@@ -27,10 +27,10 @@ type PostsResponse struct {
 	}
 }
 
-// Get newest posts
+// Get newest posts using browser-style headers to avoid Reddit auth changes for the /new endpoint.
 func (c *Client) GetNewPosts() ([]Post, error) {
 	url := `https://api.reddit.com/r/soccer/new?include_over_18=on`
-	resp, err := c.getPosts(url)
+	resp, err := c.getBrowserPosts(url)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +75,18 @@ func (c *Client) GetMediaPosts() ([]Post, error) {
 
 func (c *Client) getPosts(url string) (PostsResponse, error) {
 	resp, err := c.doGet(url)
+	if err != nil {
+		return PostsResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	r := &PostsResponse{}
+	err = json.NewDecoder(resp.Body).Decode(r)
+	return *r, err
+}
+
+func (c *Client) getBrowserPosts(url string) (PostsResponse, error) {
+	resp, err := c.doBrowserGet(url)
 	if err != nil {
 		return PostsResponse{}, err
 	}
