@@ -78,10 +78,26 @@ func (c *Client) doGet(url string) (*http.Response, error) {
 	req.Header.Add("User-Agent", "browser:top90:v0.0 (by /r/top90app)")
 	req.Header.Add("Authorization", fmt.Sprintf("Token %s", c.token.Token))
 
+	c.logger.Debug("Making request", "token", c.token.Token, "url", url)
+
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
+	// Log the full response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.logger.Error("Failed to read response body", "error", err)
+		return resp, nil
+	}
+	resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
+
+	c.logger.Debug("Response received", 
+		"status_code", resp.Status, 
+		"status", resp.StatusCode,
+		"headers", resp.Header,
+		"body", string(respBody))
 
 	return resp, nil
 }
