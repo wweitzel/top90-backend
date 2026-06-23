@@ -46,7 +46,7 @@ func NewClient(cfg Config) (*Client, error) {
 		return nil, err
 	}
 
-	req.Header.Add("User-Agent", "browser:top90:v0.0 (by /u/top90app)")
+	req.Header.Add("User-Agent", "browser:top90:v0.1 (by /u/top90app)")
 	req.Header.Add("Authorization", "redditbasicauth")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -75,7 +75,7 @@ func (c *Client) doGet(url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	req.Header.Add("User-Agent", "browser:top90:v0.0 (by /r/top90app)")
+	req.Header.Add("User-Agent", "browser:top90:v0.1 (by /r/top90app)")
 	req.Header.Add("Authorization", fmt.Sprintf("Token %s", c.token.Token))
 
 	c.logger.Debug("Making request", "token", c.token.Token, "url", url)
